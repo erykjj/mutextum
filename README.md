@@ -44,7 +44,13 @@ See [SECURITY](https://github.com/erykjj/mutextum?tab=security-ov-file).
 - **PDFs with image-only pages** are not supported; these require optical character recognition; text-based PDFs convert normally
 - **Encrypted documents** cannot be converted
 - **Multi-note splitting** is based on top-level (`#`) headings only; documents without any H1 headings are written as a single note, regardless of length
-- **Output quality depends on the source.** Conversion preserves what the original document contains; poorly formatted sources, broken hyperlinks, or inconsistent styling in the original will be reflected in the converted Markdown — the converter cannot repair what was never structured correctly
+- **Output quality depends on the source.** Conversion preserves what the original document contains; poorly formatted sources, broken hyperlinks, or inconsistent styling in the original will be reflected in the converted Markdown (the converter cannot repair what was never structured correctly)
+
+---
+
+## Obsidian Sync
+
+The plugin bundles a ~6.5 MB WebAssembly conversion engine, which makes `main.js` exceed Obsidian Sync's 5 MB per-file limit. Users on the **Sync Standard** plan will not be able to sync this plugin via Obsidian Sync. Manual installation (or BRAT) works normally.
 
 ---
 
