@@ -33,6 +33,11 @@ jobs:
             echo "TAG=${{ inputs.TAG }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
       - name: Use Node.js
         uses: actions/setup-node@v6
         with:
