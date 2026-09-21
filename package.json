@@ -1,0 +1,31 @@
+{
+  "name": "mutextum",
+  "version": "0.7.0",
+  "description": "Convert Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, CSV, and PDF documents into Markdown.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "python3 build.py"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "epub",
+    "rtf",
+    "markdown"
+  ],
+  "author": "Eryk J.",
+  "license": "MIT",
+  "dependencies": {
+    "@firecrawl/anydoc-wasm": "^0.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.1",
+    "obsidian": "1.13.1",
+    "typescript": "^5.5.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}
