@@ -39,11 +39,11 @@ export class MutextumSettingTab extends PluginSettingTab {
 
                     const headerEl = setting.settingEl.createDiv();
                     headerEl.createSpan({
-                        text: "mu/TEX/tum",
+                        text: "mu/TEX/tum  ",
                         cls: "mutextum-settings-title",
                     });
                     headerEl.createSpan({
-                        text: `   v${PLUGIN_VERSION} \u2013 anydoc v${ANYDOC_VERSION}`,
+                        text: `v${PLUGIN_VERSION} \u2013 anydoc v${ANYDOC_VERSION}`,
                         cls: "mutextum-version-info",
                     });
                 },
