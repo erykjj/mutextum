@@ -22,7 +22,7 @@ See [SECURITY](https://github.com/erykjj/mutextum?tab=security-ov-file).
 
 - **Multi-note mode** – Long documents are split into one note per top-level (`#`) heading, inside a subfolder named after the source file, with an index note listing all chapters; if no top-level headings are found, the document is written as a single note instead
 
-- **Link cleanup** – *jw.org* links are stripped automatically (the visible text is kept), so [tra.VER:ture](https://github.com/erykjj/traverture) can handle scripture linking; internal EPUB anchor links are removed as well; adjacent bold and italic spans left dangling by link removal are merged back into continuous formatting
+- **Link cleanup** – Internal EPUB anchor links are removed[^2]; adjacent bold and italic spans left dangling by link removal are merged back into continuous formatting
 
 - **Conflict handling** – If a destination note or folder already exists, a dialog asks whether to overwrite, rename, or skip
 
@@ -76,3 +76,5 @@ My other Obsidian plugins:
 ______
 
 [^1]: Obsidian only shows supported file types in the File Explorer by default. Enable **Detect all file extensions** in **Settings → Files and links** to make documents like `.docx`, `.epub`, and `.pdf` visible and right-clickable.
+
+[^2]: *jw.org* links are stripped automatically, so [tra.VER:ture](https://github.com/erykjj/traverture) can handle scripture linking
