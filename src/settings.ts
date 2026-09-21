@@ -54,7 +54,7 @@ export class MutextumSettingTab extends PluginSettingTab {
                 items: [
                     {
                         name: "Destination folder",
-                        desc: "Where converted notes are written.",
+                        desc: "Where converted notes are written",
                         control: {
                             type: "folder",
                             key: "destinationFolder",
@@ -63,7 +63,7 @@ export class MutextumSettingTab extends PluginSettingTab {
                     },
                     {
                         name: "Include frontmatter",
-                        desc: "Write YAML frontmatter (source, format, conversion timestamp) in every note.",
+                        desc: "Write YAML frontmatter (source and conversion timestamp)",
                         control: {
                             type: "toggle",
                             key: "includeFrontmatter",
