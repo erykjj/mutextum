@@ -49,11 +49,11 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
           setting.settingEl.addClass("mutextum-settings-header");
           const headerEl = setting.settingEl.createDiv();
           headerEl.createSpan({
-            text: "mu/TEX/tum",
+            text: "mu/TEX/tum  ",
             cls: "mutextum-settings-title"
           });
           headerEl.createSpan({
-            text: `   v${"0.8.0"} \u2013 anydoc v${"0.2.4"}`,
+            text: `v${"0.8.0"} \u2013 anydoc v${"0.2.4"}`,
             cls: "mutextum-version-info"
           });
         }
