@@ -2,7 +2,7 @@
 
 # mu/TEX/tum – Obsidian plugin
 
-> **mutextum** (n.): That which has been changed by weaving — a document unwoven from its native form and rewoven as text. From Latin *mutare* ("to change") + *texere* ("to weave") + *-tum* (result). Written mu/TEX/tum to mark the captured root, as in a regex substitution: `s/mu/TEX/tum/`.
+> **mutextum** (n.): That which has been changed by weaving — a document unwoven from its native form and rewoven as text. From Latin *mutare* ("to change") + *texere* ("to weave") + *-tum* (result).
 
 A document converter for Obsidian. Converts Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, CSV, and PDF documents into Markdown. *Mutare et notare* ("To change and note").
 
