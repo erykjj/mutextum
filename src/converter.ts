@@ -18,6 +18,18 @@ export interface ConversionHandle {
 }
 
 /**
+ * Shape of the message the worker posts back. Mirrors the worker's
+ * ConvertSuccess | ConvertError union in src/worker.ts.
+ */
+interface WorkerMessage {
+    id: number;
+    ok: boolean;
+    markdown?: string;
+    code?: string;
+    message?: string;
+}
+
+/**
  * Convert file bytes to Markdown in a fresh Web Worker.
  *
  * A new worker is spawned for every call and terminated when the
@@ -43,7 +55,7 @@ export function convertBytes(bytes: Uint8Array): ConversionHandle {
         worker.terminate();
     };
 
-    worker.onmessage = (event: MessageEvent) => {
+    worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
         const data = event.data;
         if (settled) return;
 

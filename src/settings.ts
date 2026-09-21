@@ -43,7 +43,7 @@ export class MutextumSettingTab extends PluginSettingTab {
                         cls: "mutextum-settings-title",
                     });
                     headerEl.createSpan({
-                        text: `   v${PLUGIN_VERSION} \u2013 anydoc v${ANYDOC_VERSION}`,
+                        text: `   v${PLUGIN_VERSION} \u2013 anydoc v${ANYDOC_VERSION}`,
                         cls: "mutextum-version-info",
                     });
                 },
