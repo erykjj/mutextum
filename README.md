@@ -50,7 +50,9 @@ See [SECURITY](https://github.com/erykjj/mutextum?tab=security-ov-file).
 
 ## Obsidian Sync
 
-The plugin bundles a ~6.5 MB WebAssembly conversion engine, which makes `main.js` exceed Obsidian Sync's 5 MB per-file limit. Users on the **Sync Standard** plan will not be able to sync this plugin via Obsidian Sync. Manual installation (or BRAT) works normally.
+The *mu/TEX/tum* plugin bundles a ~6.5 MB WebAssembly conversion engine, which makes `main.js` exceed Obsidian Sync's 5 MB per-file limit. Users on the **Sync Standard** plan will not be able to sync this plugin across devices via Obsidian Sync.
+
+*mu/TEX/tum* still installs and updates normally through **Settings → Community Plugins**, and manual installation (or BRAT) works as well. Only cross-device syncing via Obsidian Sync is affected.
 
 ---
 
@@ -64,7 +66,7 @@ Conversion is fast for typical documents, but very large files may take a moment
 
 1. In your vault's `.obsidian/plugins/` directory, make a directory (folder) called `mutextum`, if you don't already have one
 2. Download [main.js](https://github.com/erykjj/mutextum/releases/latest/download/main.js), [styles.css](https://github.com/erykjj/mutextum/releases/latest/download/styles.css) and [manifest.json](https://github.com/erykjj/mutextum/releases/latest/download/manifest.json) and put them in that directory (over-writing to update)
-3. If not already enabled, enable the plugin in Obsidian Settings → Community plugins
+3. If not already enabled, enable *mu/TEX/tum* in Obsidian Settings → Community plugins
 4. In **Settings → Files and links**, enable **Detect all file extensions** so supported documents appear in the File Explorer and can be right-clicked[^1]
 
 ---
