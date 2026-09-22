@@ -11,9 +11,9 @@
 ### Removed
 
 ____
-## 0.9.0 - 2026-09-21
+## 0.9.1 - 2026-09-22
 
 - Initial *beta* release
 
 ____
-[0.9.0]:https://github.com/erykjj/mutextum/releases/tag/0.9.0
+[0.9.1]:https://github.com/erykjj/mutextum/releases/tag/0.9.1
