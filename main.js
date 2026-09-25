@@ -37,6 +37,12 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
     this.plugin = plugin;
   }
   async setControlValue(key, value) {
+    if (key === "destinationFolder") {
+      const trimmed = typeof value === "string" ? value.trim() : "";
+      if (trimmed === "") {
+        value = DEFAULT_SETTINGS.destinationFolder;
+      }
+    }
     this.plugin.settings[key] = value;
     await this.plugin.saveSettings();
   }
@@ -53,7 +59,7 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
             cls: "mutextum-settings-title"
           });
           headerEl.createSpan({
-            text: `v${"0.9.3"} \u2013 anydoc v${"0.2.4"}`,
+            text: `v${"1.0.0"} \u2013 anydoc v${"0.2.4"}`,
             cls: "mutextum-version-info"
           });
         }
@@ -64,11 +70,17 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
         items: [
           {
             name: "Destination folder",
-            desc: "Where converted notes are written",
+            desc: "Where converted notes are written. Leave blank to use the default (Imports).",
             control: {
               type: "folder",
               key: "destinationFolder",
-              defaultValue: "Imports"
+              defaultValue: "Imports",
+              validate: (value) => {
+                if (value.includes("..")) {
+                  return "Folder path cannot contain '..'.";
+                }
+                return void 0;
+              }
             }
           },
           {
@@ -497,7 +509,7 @@ function buildFrontmatter(sourceFile) {
     "---",
     `source: ${sourceFile.name}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"0.9.3"}`,
+    `created by: mu/TEX/tum v${"1.0.0"}`,
     "---"
   ].join("\n");
 }
