@@ -5,6 +5,7 @@ import { build } from 'esbuild';
 import { readFileSync, unlinkSync, existsSync, statSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_DIR = __dirname;
@@ -27,7 +28,7 @@ if (!existsSync(wasmPath)) {
 
 const wasmSize = statSync(wasmPath).size;
 console.log(`\n[1/4] Inlining anydoc WASM: ${(wasmSize / 1024).toFixed(0)} KB`);
-const wasmBase64 = readFileSync(wasmPath).toString('base64');
+const wasmBase64 = gzipSync(readFileSync(wasmPath), { level: 9 }).toString('base64');
 
 // ──────────────────────────────────────────
 // Step 2: Read versions
