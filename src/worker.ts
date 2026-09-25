@@ -6,19 +6,25 @@ import init, { toMarkdownBytes } from '@firecrawl/anydoc-wasm';
 
 let initialized = false;
 
-function decodeWasmBase64(): Uint8Array {
+async function decodeAndDecompressWasm(): Promise<Uint8Array> {
+    // 1. Base64 → gzipped bytes
     const binaryString = atob(ANYDOC_WASM_BASE64);
-    const bytes = new Uint8Array(binaryString.length);
+    const gzippedBytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+        gzippedBytes[i] = binaryString.charCodeAt(i);
     }
-    return bytes;
+
+    // 2. Gzipped bytes → decompressed bytes via DecompressionStream
+    const ds = new DecompressionStream('gzip');
+    const decompressedStream = new Blob([gzippedBytes]).stream().pipeThrough(ds);
+    const decompressedBuffer = await new Response(decompressedStream).arrayBuffer();
+    return new Uint8Array(decompressedBuffer);
 }
 
 async function ensureInitialized(): Promise<void> {
     if (initialized) return;
 
-    const bytes = decodeWasmBase64();
+    const bytes = await decodeAndDecompressWasm();
     const module = new WebAssembly.Module(bytes as BufferSource);
     await init({ module_or_path: module });
 
