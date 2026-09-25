@@ -25,6 +25,13 @@ export class MutextumSettingTab extends PluginSettingTab {
     }
 
     async setControlValue(key: string, value: unknown): Promise<void> {
+        if (key === "destinationFolder") {
+            const trimmed = typeof value === "string" ? value.trim() : "";
+            if (trimmed === "") {
+                value = DEFAULT_SETTINGS.destinationFolder;
+            }
+        }
+
         (this.plugin.settings as unknown as Record<string, unknown>)[key] = value;
         await this.plugin.saveSettings();
     }
@@ -32,7 +39,7 @@ export class MutextumSettingTab extends PluginSettingTab {
     getSettingDefinitions(): SettingDefinitionItem[] {
         return [
             {
-                name: "", 
+                name: "",
                 render: (setting) => {
                     setting.settingEl.empty();
                     setting.settingEl.addClass("mutextum-settings-header");
@@ -54,11 +61,17 @@ export class MutextumSettingTab extends PluginSettingTab {
                 items: [
                     {
                         name: "Destination folder",
-                        desc: "Where converted notes are written",
+                        desc: "Where converted notes are written. Leave blank to use the default (Imports).",
                         control: {
                             type: "folder",
                             key: "destinationFolder",
                             defaultValue: "Imports",
+                            validate: (value: string) => {
+                                if (value.includes("..")) {
+                                    return "Folder path cannot contain '..'.";
+                                }
+                                return undefined;
+                            },
                         },
                     },
                     {
@@ -108,7 +121,6 @@ export class MutextumSettingTab extends PluginSettingTab {
                     });
                     travertureLink.setAttribute("target", "_blank");
                     travertureLink.setAttribute("rel", "noopener noreferrer");
-
                 },
             },
         ];
