@@ -42,6 +42,7 @@ See [SECURITY](https://github.com/erykjj/mutextum?tab=security-ov-file).
 ## Known Limitations
 
 - **PDFs with image-only pages** are not supported; these require optical character recognition; text-based PDFs convert normally
+- **Some PDFs convert with garbled text**; the PDF's internal text layer is the problem, not the conversion
 - **Encrypted documents** cannot be converted
 - **Multi-note splitting** is based on top-level (`#`) headings only; documents without any H1 headings are written as a single note, regardless of length
 - **Output quality depends on the source.** Conversion preserves what the original document contains; poorly formatted sources, broken hyperlinks, or inconsistent styling in the original will be reflected in the converted Markdown (the converter cannot repair what was never structured correctly)
