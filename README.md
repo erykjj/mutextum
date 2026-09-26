@@ -48,14 +48,6 @@ See [SECURITY](https://github.com/erykjj/mutextum?tab=security-ov-file).
 
 ---
 
-## Obsidian Sync
-
-The *mu/TEX/tum* plugin bundles a ~6.5 MB WebAssembly conversion engine, which makes `main.js` exceed Obsidian Sync's 5 MB per-file limit. Users on the **Sync Standard** plan will not be able to sync this plugin across devices via Obsidian Sync.
-
-*mu/TEX/tum* still installs and updates normally through **Settings → Community Plugins**, and manual installation (or BRAT) works as well. Only cross-device syncing via Obsidian Sync is affected.
-
----
-
 ## Performance
 
 Conversion is fast for typical documents, but very large files may take a moment. The source file remains untouched throughout.
