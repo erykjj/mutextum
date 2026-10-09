@@ -31,9 +31,3 @@ All conversion is performed locally inside the Web Worker. No document content i
 ## File Handling
 
 **Source files are never modified or deleted** — they remain exactly as they were before conversion.
-
----
-
-## TypeScript Warnings
-
-The plugin source contains some TypeScript strictness warnings inherent to JavaScript interop. **These warnings are cosmetic and do not affect functionality or security**.
