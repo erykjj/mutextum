@@ -59,7 +59,7 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
             cls: "mutextum-settings-title"
           });
           headerEl.createSpan({
-            text: `v${"1.0.2"} (anydoc v${"0.2.4"})`,
+            text: `v${"1.0.3"} (anydoc v${"0.2.4"})`,
             cls: "mutextum-version-info"
           });
         }
@@ -475,7 +475,7 @@ function buildFrontmatter(sourceFile) {
     "---",
     `source: ${sourceFile.name}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"1.0.2"}`,
+    `created by: mu/TEX/tum v${"1.0.3"}`,
     "---"
   ].join("\n");
 }
