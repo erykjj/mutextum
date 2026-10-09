@@ -59,7 +59,7 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
             cls: "mutextum-settings-title"
           });
           headerEl.createSpan({
-            text: `v${"1.0.1"} \u2013 anydoc v${"0.2.4"}`,
+            text: `v${"1.0.2"} (anydoc v${"0.2.4"})`,
             cls: "mutextum-version-info"
           });
         }
@@ -93,40 +93,6 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
             }
           }
         ]
-      },
-      {
-        name: "",
-        render: (setting) => {
-          setting.settingEl.empty();
-          setting.settingEl.addClass("mutextum-settings-footer");
-          const footerEl = setting.settingEl.createDiv();
-          footerEl.appendChild(
-            document.createTextNode("My other Obsidian plugins: ")
-          );
-          const conversumStrong = footerEl.createEl("strong");
-          const conversumLink = conversumStrong.createEl("a", {
-            text: "con[VER]sum",
-            href: "https://github.com/erykjj/conversum"
-          });
-          conversumLink.setAttribute("target", "_blank");
-          conversumLink.setAttribute("rel", "noopener noreferrer");
-          footerEl.appendChild(document.createTextNode(", "));
-          const inrefensStrong = footerEl.createEl("strong");
-          const inrefensLink = inrefensStrong.createEl("a", {
-            text: "in(REF)ens",
-            href: "https://github.com/erykjj/inrefens"
-          });
-          inrefensLink.setAttribute("target", "_blank");
-          inrefensLink.setAttribute("rel", "noopener noreferrer");
-          footerEl.appendChild(document.createTextNode(", "));
-          const travertureStrong = footerEl.createEl("strong");
-          const travertureLink = travertureStrong.createEl("a", {
-            text: "tra.VER:ture",
-            href: "https://github.com/erykjj/traverture"
-          });
-          travertureLink.setAttribute("target", "_blank");
-          travertureLink.setAttribute("rel", "noopener noreferrer");
-        }
       }
     ];
   }
@@ -509,7 +475,7 @@ function buildFrontmatter(sourceFile) {
     "---",
     `source: ${sourceFile.name}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"1.0.1"}`,
+    `created by: mu/TEX/tum v${"1.0.2"}`,
     "---"
   ].join("\n");
 }
