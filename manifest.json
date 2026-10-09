@@ -1,7 +1,7 @@
 {
   "id": "mutextum",
   "name": "muTEXtum",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minAppVersion": "1.13.0",
   "description": "Import Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, CSV, and PDF files and convert them to Markdown.",
   "author": "Eryk J.",
