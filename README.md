@@ -4,30 +4,23 @@
 
 > **mutextum** (n.): That which has been changed by weaving — a document unwoven from its native form and rewoven as text. From Latin *mutare* ("to change") + *texere* ("to weave") + *-tum* (result).
 
-A document converter for Obsidian. Converts Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, CSV, and PDF documents into Markdown. *Mutare et notare* ("To change and note").
+A document converter for Obsidian. Import RTF, EPUB, CSV, Word, PowerPoint, Excel, OpenDocument, and PDF files and convert them to Markdown. *Mutare et notare* ("To change and note").
 
 ## Security and Privacy
 
-See [SECURITY](https://github.com/erykjj/mutextum?tab=security-ov-file).
+See [the security and privacy notes](https://github.com/erykjj/mutextum?tab=security-ov-file) for information on what this plugin does and does not do behind the scenes.
 
 ---
 
 ## Features
 
 - **On-device conversion** – All conversion happens locally; no external services, no API keys, no network requests, no system dependencies
-
 - **Broad format support** – Word (`.doc`, `.docx`), PowerPoint (`.ppt`, `.pptx`), Excel (`.xlsx`), OpenDocument (`.odt`, `.ods`, `.odp`), RTF (`.rtf`), EPUB (`.epub`), CSV (`.csv`), and PDF (`.pdf`)
-
 - **Right-click conversion** – Convert any supported file already in your vault via the file context menu (right-click on desktop, long-press on mobile); the menu item appears only for supported formats[^1]
-
 - **Multi-note mode** – Long documents are split into one note per top-level (`#`) heading, inside a subfolder named after the source file, with an index note listing all chapters; if no top-level headings are found, the document is written as a single note instead
-
-- **Link cleanup** – Internal EPUB anchor links are removed[^2]; adjacent bold and italic spans left dangling by link removal are merged back into continuous formatting
-
+- **Link cleanup** – Internal EPUB anchor links are removed; adjacent bold and italic spans left dangling by link removal are merged back into continuous formatting; *jw.org* links are stripped automatically, so [tra.VER:ture](https://github.com/erykjj/traverture) can handle scripture linking
 - **Conflict handling** – If a destination note or folder already exists, a dialog asks whether to overwrite, rename, or skip
-
 - **Optional frontmatter** – Add YAML frontmatter to each generated note with source filename, conversion timestamp, and plugin version
-
 - **Desktop and mobile support**
 
 ---
@@ -42,7 +35,7 @@ See [SECURITY](https://github.com/erykjj/mutextum?tab=security-ov-file).
 ## Known Limitations
 
 - **PDFs with image-only pages** are not supported; these require optical character recognition; text-based PDFs convert normally
-- **Some PDFs convert with garbled text**; the PDF's internal text layer is the problem, not the conversion
+- **Some PDFs convert with garbled text.** The PDF's internal text layer is the problem, not the conversion; regenerating the PDF from its original source may produce clean output
 - **Encrypted documents** cannot be converted
 - **Multi-note splitting** is based on top-level (`#`) headings only; documents without any H1 headings are written as a single note, regardless of length
 - **Output quality depends on the source.** Conversion preserves what the original document contains; poorly formatted sources, broken hyperlinks, or inconsistent styling in the original will be reflected in the converted Markdown (the converter cannot repair what was never structured correctly)
@@ -76,6 +69,4 @@ My other Obsidian plugins:
 
 ______
 
-[^1]: Obsidian only shows supported file types in the File Explorer by default. Enable **Detect all file extensions** in **Settings → Files and links** to make documents like `.docx`, `.epub`, and `.pdf` visible and right-clickable.
-
-[^2]: *jw.org* links are stripped automatically, so [tra.VER:ture](https://github.com/erykjj/traverture) can handle scripture linking
+[^1]: Obsidian only shows supported file types (like `.docx`, `.epub`, and `.pdf`) in the File Explorer when **Detect all file extensions** is enabled in **Settings → Files and links**.
