@@ -189,6 +189,7 @@ export class MutextumPanel extends ItemView {
         this.renderQueue();
 
         if (added > 0) {
+            this.statusEl.setText("");
             new Notice(`Added ${added} file${added === 1 ? "" : "s"} to the queue.`);
         }
         if (rejected > 0) {
@@ -219,6 +220,7 @@ export class MutextumPanel extends ItemView {
             vaultFile: file,
             bytes: null,
         });
+        this.statusEl.setText("");
         this.renderQueue();
     }
 
