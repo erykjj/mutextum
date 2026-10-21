@@ -1,6 +1,6 @@
 // src/panel.ts
 
-import { ItemView, WorkspaceLeaf, TFile, Notice, FuzzySuggestModal, App } from "obsidian";
+import { App, ItemView, WorkspaceLeaf, TFile, Notice, FuzzySuggestModal, setIcon } from "obsidian";
 import { convertBytes } from "./converter";
 import type MutextumPlugin from "../main";
 import { writeOutputFromPanel, SUPPORTED_EXTENSIONS } from "./ui";
@@ -247,8 +247,10 @@ export class MutextumPanel extends ItemView {
         this.queue.forEach((item, index) => {
             const row = this.listEl.createDiv({ cls: "mutextum-queue-item" });
             row.createSpan({ text: item.fileName });
-            const delBtn = row.createEl("span", { cls: "mutextum-delete-btn" });
-            delBtn.setText("\u00d7");
+
+            const delBtn = row.createDiv({ cls: "clickable-icon mutextum-delete-btn" });
+            setIcon(delBtn, "x");
+            delBtn.setAttribute("aria-label", "Remove from queue");
             delBtn.onclick = () => this.removeFromQueue(index);
         });
 

@@ -95,15 +95,6 @@
   background-color: var(--background-modifier-hover);
 }
 
-.mutextum-delete-btn {
-  cursor: pointer;
-  color: var(--text-muted);
-}
-
-.mutextum-delete-btn:hover {
-  color: var(--text-error);
-}
-
 .mutextum-empty {
   color: var(--text-faint);
   text-align: center;
