@@ -25,8 +25,81 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian4 = require("obsidian");
 
+// src/settings.ts
+var import_obsidian = require("obsidian");
+var DEFAULT_SETTINGS = {
+  destinationFolder: "Imports",
+  includeFrontmatter: true
+};
+var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  async setControlValue(key, value) {
+    if (key === "destinationFolder") {
+      const trimmed = typeof value === "string" ? value.trim() : "";
+      if (trimmed === "") {
+        value = DEFAULT_SETTINGS.destinationFolder;
+      }
+    }
+    this.plugin.settings[key] = value;
+    await this.plugin.saveSettings();
+  }
+  getSettingDefinitions() {
+    return [
+      {
+        name: "",
+        render: (setting) => {
+          setting.settingEl.empty();
+          setting.settingEl.addClass("mutextum-settings-header");
+          const headerEl = setting.settingEl.createDiv();
+          headerEl.createSpan({
+            text: "mu/TEX/tum  ",
+            cls: "mutextum-settings-title"
+          });
+          headerEl.createSpan({
+            text: `v${"2.0.1"} (anydoc v${"0.2.4"})`,
+            cls: "mutextum-version-info"
+          });
+        }
+      },
+      {
+        type: "group",
+        heading: "Output",
+        items: [
+          {
+            name: "Destination folder",
+            desc: "Where converted notes are written. Leave blank to use the default (Imports).",
+            control: {
+              type: "folder",
+              key: "destinationFolder",
+              defaultValue: "Imports",
+              validate: (value) => {
+                if (value.includes("..")) {
+                  return "Folder path cannot contain '..'.";
+                }
+                return void 0;
+              }
+            }
+          },
+          {
+            name: "Include frontmatter",
+            desc: "Write YAML frontmatter (source and conversion timestamp)",
+            control: {
+              type: "toggle",
+              key: "includeFrontmatter",
+              defaultValue: true
+            }
+          }
+        ]
+      }
+    ];
+  }
+};
+
 // src/panel.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/converter.ts
 function convertBytes(bytes) {
@@ -78,7 +151,7 @@ function convertBytes(bytes) {
 }
 
 // src/ui.ts
-var import_obsidian = require("obsidian");
+var import_obsidian2 = require("obsidian");
 var SUPPORTED_EXTENSIONS = [
   "doc",
   "docx",
@@ -106,7 +179,7 @@ async function writeOutputFromPanel(plugin, source, markdown, includeFrontmatter
     const proposed = `${destFolder.path}/${baseName}.md`;
     const finalPath = await resolveConflict(plugin.app, proposed, false);
     await writeNote(plugin, finalPath, output, source, includeFrontmatterOverride);
-    new import_obsidian.Notice(
+    new import_obsidian2.Notice(
       `No H1 headings found \u2014 wrote single note: ${finalPath}`
     );
     return;
@@ -130,7 +203,7 @@ async function writeOutputFromPanel(plugin, source, markdown, includeFrontmatter
   const indexBody = chapterLinks.join("\n");
   const indexPath = `${subfolder.path}/00 - Index.md`;
   await writeNote(plugin, indexPath, indexBody, source, includeFrontmatterOverride);
-  new import_obsidian.Notice(
+  new import_obsidian2.Notice(
     `Converted: ${source.fileName} \u2014 ${written} chapter${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
   );
 }
@@ -176,7 +249,7 @@ async function ensureFolder(app, path) {
     return app.vault.getRoot();
   }
   const existing = app.vault.getAbstractFileByPath(normalized);
-  if (existing instanceof import_obsidian.TFolder) {
+  if (existing instanceof import_obsidian2.TFolder) {
     return existing;
   }
   if (existing) {
@@ -191,7 +264,7 @@ async function writeNote(plugin, path, markdown, source, includeFrontmatter) {
     content = frontmatter + "\n\n" + markdown;
   }
   const existing = plugin.app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian.TFile) {
+  if (existing instanceof import_obsidian2.TFile) {
     await plugin.app.vault.modify(existing, content);
     return;
   }
@@ -213,7 +286,7 @@ function buildFrontmatter(source) {
     "---",
     `source: ${source.fileName}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"2.0.0"}`,
+    `created by: mu/TEX/tum v${"2.0.1"}`,
     "---"
   ].join("\n");
 }
@@ -250,7 +323,7 @@ async function pathExists(app, path) {
 
 // src/panel.ts
 var VIEW_TYPE_MUTEXTUM = "mutextum-panel";
-var FilePickerModal = class extends import_obsidian2.FuzzySuggestModal {
+var FilePickerModal = class extends import_obsidian3.FuzzySuggestModal {
   constructor(app, onChoose) {
     super(app);
     this.onChoose = onChoose;
@@ -268,7 +341,7 @@ var FilePickerModal = class extends import_obsidian2.FuzzySuggestModal {
     this.onChoose(file);
   }
 };
-var MutextumPanel = class extends import_obsidian2.ItemView {
+var MutextumPanel = class extends import_obsidian3.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.queue = [];
@@ -378,10 +451,10 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
     this.renderQueue();
     if (added > 0) {
       this.statusEl.setText("");
-      new import_obsidian2.Notice(`Added ${added} file${added === 1 ? "" : "s"} to the queue.`);
+      new import_obsidian3.Notice(`Added ${added} file${added === 1 ? "" : "s"} to the queue.`);
     }
     if (rejected > 0) {
-      new import_obsidian2.Notice(
+      new import_obsidian3.Notice(
         `${rejected} file${rejected === 1 ? "" : "s"} skipped: unsupported format.`
       );
     }
@@ -396,7 +469,7 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
   }
   addVaultFile(file) {
     if (this.queue.some((q) => q.vaultFile?.path === file.path)) {
-      new import_obsidian2.Notice(`${file.name} is already in the queue.`);
+      new import_obsidian3.Notice(`${file.name} is already in the queue.`);
       return;
     }
     this.queue.push({
@@ -428,10 +501,8 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
     this.queue.forEach((item, index) => {
       const row = this.listEl.createDiv({ cls: "mutextum-queue-item" });
       row.createSpan({ text: item.fileName });
-      const delBtn = row.createEl("span", {
-        text: "\xD7",
-        cls: "mutextum-delete-btn"
-      });
+      const delBtn = row.createEl("span", { cls: "mutextum-delete-btn" });
+      delBtn.setText("\xD7");
       delBtn.onclick = () => this.removeFromQueue(index);
     });
     this.convertBtn.disabled = false;
@@ -465,7 +536,7 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
           break;
         }
         if (!result.ok) {
-          new import_obsidian2.Notice(`Failed: ${item.fileName} \u2014 ${result.errorMessage}`);
+          new import_obsidian3.Notice(`Failed: ${item.fileName} \u2014 ${result.errorMessage}`);
           failed++;
         } else {
           await writeOutputFromPanel(
@@ -478,7 +549,7 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
         }
       } catch (e) {
         console.error("mutextum:", e);
-        new import_obsidian2.Notice(`Failed: ${item.fileName}`);
+        new import_obsidian3.Notice(`Failed: ${item.fileName}`);
         failed++;
       }
       this.progressBar.value = (i + 1) / total * 100;
@@ -491,79 +562,6 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
     this.browseBtn.disabled = false;
     this.queue = [];
     this.renderQueue();
-  }
-};
-
-// src/settings.ts
-var import_obsidian3 = require("obsidian");
-var DEFAULT_SETTINGS = {
-  destinationFolder: "Imports",
-  includeFrontmatter: true
-};
-var MutextumSettingTab = class extends import_obsidian3.PluginSettingTab {
-  constructor(app, plugin) {
-    super(app, plugin);
-    this.plugin = plugin;
-  }
-  async setControlValue(key, value) {
-    if (key === "destinationFolder") {
-      const trimmed = typeof value === "string" ? value.trim() : "";
-      if (trimmed === "") {
-        value = DEFAULT_SETTINGS.destinationFolder;
-      }
-    }
-    this.plugin.settings[key] = value;
-    await this.plugin.saveSettings();
-  }
-  getSettingDefinitions() {
-    return [
-      {
-        name: "",
-        render: (setting) => {
-          setting.settingEl.empty();
-          setting.settingEl.addClass("mutextum-settings-header");
-          const headerEl = setting.settingEl.createDiv();
-          headerEl.createSpan({
-            text: "mu/TEX/tum  ",
-            cls: "mutextum-settings-title"
-          });
-          headerEl.createSpan({
-            text: `v${"2.0.0"} (anydoc v${"0.2.4"})`,
-            cls: "mutextum-version-info"
-          });
-        }
-      },
-      {
-        type: "group",
-        heading: "Output",
-        items: [
-          {
-            name: "Destination folder",
-            desc: "Where converted notes are written. Leave blank to use the default (Imports).",
-            control: {
-              type: "folder",
-              key: "destinationFolder",
-              defaultValue: "Imports",
-              validate: (value) => {
-                if (value.includes("..")) {
-                  return "Folder path cannot contain '..'.";
-                }
-                return void 0;
-              }
-            }
-          },
-          {
-            name: "Include frontmatter",
-            desc: "Write YAML frontmatter (source and conversion timestamp)",
-            control: {
-              type: "toggle",
-              key: "includeFrontmatter",
-              defaultValue: true
-            }
-          }
-        ]
-      }
-    ];
   }
 };
 
@@ -588,13 +586,13 @@ var MutextumPlugin = class extends import_obsidian4.Plugin {
       (leaf) => new MutextumPanel(leaf, this)
     );
     this.addRibbonIcon("file-symlink", "mu/TEX/tum: Import", () => {
-      this.activateView();
+      void this.activateView();
     });
     this.addCommand({
       id: "open-panel",
       name: "Open Import Panel",
       callback: () => {
-        this.activateView();
+        void this.activateView();
       }
     });
   }
@@ -609,7 +607,7 @@ var MutextumPlugin = class extends import_obsidian4.Plugin {
       await leaf.setViewState({ type: VIEW_TYPE_MUTEXTUM, active: true });
     }
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      await workspace.revealLeaf(leaf);
     }
   }
   onunload() {
