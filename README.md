@@ -14,14 +14,18 @@ See [the security and privacy notes](https://github.com/erykjj/mutextum?tab=secu
 
 ## Features
 
+- **Dedicated import panel** – Open the mu/TEX/tum panel from the ribbon or the command palette; drag documents in from anywhere on your computer, or browse files already in your vault
 - **On-device conversion** – All conversion happens locally; no external services, no API keys, no network requests, no system dependencies
 - **Broad format support** – Word (`.doc`, `.docx`), PowerPoint (`.ppt`, `.pptx`), Excel (`.xlsx`), OpenDocument (`.odt`, `.ods`, `.odp`), RTF (`.rtf`), EPUB (`.epub`), CSV (`.csv`), and PDF (`.pdf`)
-- **Right-click conversion** – Convert any supported file already in your vault via the file context menu (right-click on desktop, long-press on mobile); the menu item appears only for supported formats[^1]
+- **Batch processing** – Queue multiple documents and convert them in one run, with a progress indicator and a per-file outcome summary
 - **Multi-note mode** – Long documents are split into one note per top-level (`#`) heading, inside a subfolder named after the source file, with an index note listing all chapters; if no top-level headings are found, the document is written as a single note instead
 - **Link cleanup** – Internal EPUB anchor links are removed; adjacent bold and italic spans left dangling by link removal are merged back into continuous formatting; *jw.org* links are stripped automatically, so [tra.VER:ture](https://github.com/erykjj/traverture) can handle scripture linking
-- **Conflict handling** – If a destination note or folder already exists, a dialog asks whether to overwrite, rename, or skip
+- **Automatic conflict handling** – When a destination note or folder already exists, it is renamed with a numbered suffix (` 1`, ` 2`, …) rather than overwritten
 - **Optional frontmatter** – Add YAML frontmatter to each generated note with source filename, conversion timestamp, and plugin version
 - **Desktop and mobile support**
+
+![preview](res/muTEXtum1.png)
+![preview](res/muTEXtum2.png)
 
 ---
 
@@ -29,6 +33,8 @@ See [the security and privacy notes](https://github.com/erykjj/mutextum?tab=secu
 
 - **Destination folder** – Where converted notes are written (default: `Imports`)
 - **Include frontmatter** – Write YAML frontmatter in every generated note
+
+The panel lets you change the destination folder and frontmatter toggle for the current session without touching these defaults.
 
 ---
 
@@ -53,7 +59,8 @@ Conversion is fast for typical documents, but very large files may take a moment
 1. In your vault's `.obsidian/plugins/` directory, make a directory (folder) called `mutextum`, if you don't already have one
 2. Download [main.js](https://github.com/erykjj/mutextum/releases/latest/download/main.js), [styles.css](https://github.com/erykjj/mutextum/releases/latest/download/styles.css) and [manifest.json](https://github.com/erykjj/mutextum/releases/latest/download/manifest.json) and put them in that directory (over-writing to update)
 3. If not already enabled, enable *mu/TEX/tum* in Obsidian Settings → Community plugins
-4. In **Settings → Files and links**, enable **Detect all file extensions** so supported documents appear in the File Explorer and can be right-clicked[^1]
+
+Files can be dragged into the panel from outside the vault, so there is no need to change Obsidian's file-visibility settings.
 
 ---
 
@@ -66,7 +73,3 @@ My other Obsidian plugins:
 - **con[VER]sum**: [GitHub repo](https://github.com/erykjj/conversum), [Obsidian Community](https://community.obsidian.md/plugins/conversum)
 - **in(REF)ens**: [GitHub repo](https://github.com/erykjj/inrefens), [Obsidian Community](https://community.obsidian.md/plugins/inrefens)
 - **tra.VER:ture**: [GitHub repo](https://github.com/erykjj/traverture), [Obsidian Community](https://community.obsidian.md/plugins/traverture)
-
-______
-
-[^1]: Obsidian only shows supported file types (like `.docx`, `.epub`, and `.pdf`) in the File Explorer when **Detect all file extensions** is enabled in **Settings → Files and links**.
