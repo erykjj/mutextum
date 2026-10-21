@@ -25,81 +25,8 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian4 = require("obsidian");
 
-// src/settings.ts
-var import_obsidian = require("obsidian");
-var DEFAULT_SETTINGS = {
-  destinationFolder: "Imports",
-  includeFrontmatter: true
-};
-var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
-  constructor(app, plugin) {
-    super(app, plugin);
-    this.plugin = plugin;
-  }
-  async setControlValue(key, value) {
-    if (key === "destinationFolder") {
-      const trimmed = typeof value === "string" ? value.trim() : "";
-      if (trimmed === "") {
-        value = DEFAULT_SETTINGS.destinationFolder;
-      }
-    }
-    this.plugin.settings[key] = value;
-    await this.plugin.saveSettings();
-  }
-  getSettingDefinitions() {
-    return [
-      {
-        name: "",
-        render: (setting) => {
-          setting.settingEl.empty();
-          setting.settingEl.addClass("mutextum-settings-header");
-          const headerEl = setting.settingEl.createDiv();
-          headerEl.createSpan({
-            text: "mu/TEX/tum  ",
-            cls: "mutextum-settings-title"
-          });
-          headerEl.createSpan({
-            text: `v${"1.0.3"} (anydoc v${"0.2.4"})`,
-            cls: "mutextum-version-info"
-          });
-        }
-      },
-      {
-        type: "group",
-        heading: "Output",
-        items: [
-          {
-            name: "Destination folder",
-            desc: "Where converted notes are written. Leave blank to use the default (Imports).",
-            control: {
-              type: "folder",
-              key: "destinationFolder",
-              defaultValue: "Imports",
-              validate: (value) => {
-                if (value.includes("..")) {
-                  return "Folder path cannot contain '..'.";
-                }
-                return void 0;
-              }
-            }
-          },
-          {
-            name: "Include frontmatter",
-            desc: "Write YAML frontmatter (source and conversion timestamp)",
-            control: {
-              type: "toggle",
-              key: "includeFrontmatter",
-              defaultValue: true
-            }
-          }
-        ]
-      }
-    ];
-  }
-};
-
-// src/ui.ts
-var import_obsidian3 = require("obsidian");
+// src/panel.ts
+var import_obsidian2 = require("obsidian");
 
 // src/converter.ts
 function convertBytes(bytes) {
@@ -150,215 +77,44 @@ function convertBytes(bytes) {
   return { result, cancel };
 }
 
-// src/modal.ts
-var import_obsidian2 = require("obsidian");
-var ConversionProgressModal = class extends import_obsidian2.Modal {
-  constructor(app, fileName, onCancel) {
-    super(app);
-    this.cancelled = false;
-    this.fileName = fileName;
-    this.onCancel = onCancel;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    this.setTitle("Converting\u2026");
-    contentEl.createEl("p", { text: this.fileName });
-    const spinnerEl = contentEl.createDiv({ cls: "mutextum-spinner" });
-    spinnerEl.createDiv({ cls: "mutextum-spinner-ring" });
-    const btnContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    btnContainer.createEl("button", { text: "Cancel" }).addEventListener("click", () => {
-      if (this.cancelled) return;
-      this.cancelled = true;
-      this.onCancel();
-      this.close();
-    });
-  }
-  onClose() {
-    this.contentEl.empty();
-    if (!this.cancelled) {
-      this.cancelled = true;
-      this.onCancel();
-    }
-  }
-};
-var ConflictModal = class extends import_obsidian2.Modal {
-  constructor(app, conflictPath, isFolder, resolve) {
-    super(app);
-    this.resolved = false;
-    this.conflictPath = conflictPath;
-    this.isFolder = isFolder;
-    this.resolve = resolve;
-  }
-  finish(choice) {
-    if (this.resolved) return;
-    this.resolved = true;
-    this.resolve(choice);
-    this.close();
-  }
-  onOpen() {
-    const { contentEl } = this;
-    this.setTitle("Conflict");
-    const kind = this.isFolder ? "folder" : "note";
-    contentEl.createEl("p", {
-      text: `The ${kind} "${this.conflictPath}" already exists. What would you like to do?`
-    });
-    if (this.isFolder) {
-      contentEl.createEl("p", {
-        text: "Overwrite will replace any files in the existing folder that match the new conversion. Other files in that folder will be left untouched.",
-        cls: "mod-muted"
-      });
-    }
-    const btnContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    btnContainer.createEl("button", { text: "Overwrite" }).addEventListener("click", () => this.finish("overwrite"));
-    btnContainer.createEl("button", { text: "Rename" }).addEventListener("click", () => this.finish("rename"));
-    btnContainer.createEl("button", { text: "Skip" }).addEventListener("click", () => this.finish("skip"));
-  }
-  onClose() {
-    this.contentEl.empty();
-    if (!this.resolved) {
-      this.resolved = true;
-      this.resolve("skip");
-    }
-  }
-};
-var FRIENDLY_MESSAGES = {
-  encrypted: "This file is encrypted and cannot be converted.",
-  unsupported: "This file format isn't supported.",
-  malformed: "This file appears to be damaged or incomplete.",
-  needsOcr: "This PDF is image-only. OCR isn't supported yet.",
-  resourceLimit: "This file is too large or complex to convert.",
-  missingPart: "This file is missing required components.",
-  worker: "The conversion engine failed to start.",
-  unknown: "An unexpected error occurred during conversion."
-};
-var ConversionErrorModal = class extends import_obsidian2.Modal {
-  constructor(app, fileName, errorCode, errorMessage) {
-    super(app);
-    this.fileName = fileName;
-    this.errorCode = errorCode;
-    this.errorMessage = errorMessage;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    this.setTitle("Conversion Failed");
-    contentEl.createEl("p", {
-      text: `${this.fileName} could not be converted.`
-    });
-    const friendly = FRIENDLY_MESSAGES[this.errorCode] ?? FRIENDLY_MESSAGES.unknown;
-    contentEl.createEl("p", { text: friendly });
-    const btnContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    btnContainer.createEl("button", { text: "Copy details" }).addEventListener("click", () => {
-      const details = JSON.stringify(
-        {
-          file: this.fileName,
-          code: this.errorCode,
-          message: this.errorMessage
-        },
-        null,
-        2
-      );
-      void navigator.clipboard.writeText(details);
-      new import_obsidian2.Notice("Error details copied to clipboard.");
-    });
-    btnContainer.createEl("button", { text: "OK", cls: "mod-cta" }).addEventListener("click", () => this.close());
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-};
-
 // src/ui.ts
-var SUPPORTED_EXTENSIONS = ["doc", "docx", "odt", "pdf", "ppt", "pptx", "rtf", "epub", "xlsx", "ods", "odp", "csv"];
-function registerFileMenu(plugin) {
-  plugin.registerEvent(
-    // @ts-ignore — `file-menu` is a valid event but may be missing from typings
-    plugin.app.workspace.on("file-menu", (menu, file) => {
-      if (!SUPPORTED_EXTENSIONS.includes(file.extension.toLowerCase())) {
-        return;
-      }
-      menu.addItem((item) => {
-        item.setTitle("mu/TEX/tum \u2192 Markdown").setIcon("file-symlink").onClick(() => {
-          void convertFile(plugin, file);
-        });
-      });
-    })
-  );
-}
-async function convertFile(plugin, file) {
-  let bytes;
-  try {
-    const arrayBuffer = await plugin.app.vault.readBinary(file);
-    bytes = new Uint8Array(arrayBuffer);
-  } catch (e) {
-    console.error("mutextum: failed to read file:", e);
-    new ConversionErrorModal(plugin.app, file.name, "io", String(e)).open();
-    return;
-  }
-  let handle;
-  let progressModal;
-  try {
-    handle = convertBytes(bytes);
-  } catch (e) {
-    console.error("mutextum: failed to spawn worker:", e);
-    new ConversionErrorModal(plugin.app, file.name, "worker", String(e)).open();
-    return;
-  }
-  progressModal = new ConversionProgressModal(plugin.app, file.name, () => {
-    handle.cancel();
-  });
-  progressModal.open();
-  const result = await handle.result;
-  progressModal.close();
-  if (result.cancelled) {
-    new import_obsidian3.Notice("Conversion cancelled.");
-    return;
-  }
-  if (!result.ok) {
-    new ConversionErrorModal(
-      plugin.app,
-      file.name,
-      result.errorCode ?? "unknown",
-      result.errorMessage ?? "No additional details."
-    ).open();
-    return;
-  }
-  try {
-    await writeOutput(plugin, file, result.markdown ?? "");
-  } catch (e) {
-    console.error("mutextum: failed to write output:", e);
-    new ConversionErrorModal(plugin.app, file.name, "io", String(e)).open();
-  }
-}
+var import_obsidian = require("obsidian");
+var SUPPORTED_EXTENSIONS = [
+  "doc",
+  "docx",
+  "odt",
+  "pdf",
+  "ppt",
+  "pptx",
+  "rtf",
+  "epub",
+  "xlsx",
+  "ods",
+  "odp",
+  "csv"
+];
 function cleanMarkdown(markdown) {
-  return markdown.replace(/\[([^\]]+)\]\(https?:\/\/[^)]*\.jw\.org\/[^)]+\)/g, "$1").replace(/\[([^\]]+)\]\(#[^)]+\)/g, "$1").replace(/<a\s[^>]*id="[^"]*"[^>]*><\/a>/g, "").replace(/\*\*\s+\*\*/g, " ").replace(/(?<!\*)\*(?!\*)\s+(?<!\*)\*(?!\*)/g, " ").replace(/\*\*\*\*/g, "").replace(/____/g, "");
+  return markdown.replace(/\[([^\]]+)\]\(https?:\/\/[^)]*\.jw\.org\/[^)]+\)/g, "$1").replace(/\[([^\]]+)\]\(#[^)]+\)/g, "$1").replace(/<a\s[^>]*id="[^"]*"[^>]*><\/a>/g, "").replace(/\*\*\s+\*\*/g, " ").replace(/(?<!\*)\*(?!\*)\s+(?<!\*)\*(?!\*)/g, " ").replace(/\*\*\*\*/g, "").replace(/____/g, "__ __");
 }
-async function writeOutput(plugin, sourceFile, markdown) {
+async function writeOutputFromPanel(plugin, source, markdown, includeFrontmatterOverride) {
   const settings = plugin.settings;
   const output = cleanMarkdown(markdown);
-  const baseName = sourceFile.basename;
+  const baseName = source.basename;
   const destFolder = await ensureFolder(plugin.app, settings.destinationFolder);
   const chapters = splitOnH1(output);
   if (chapters.length === 0) {
     const proposed = `${destFolder.path}/${baseName}.md`;
-    const choice = await resolveConflict(plugin.app, proposed, false);
-    if (choice.kind === "skip") {
-      new import_obsidian3.Notice(`Skipped: ${proposed} already exists.`);
-      return;
-    }
-    await writeNote(plugin, choice.path, output, sourceFile);
-    new import_obsidian3.Notice(
-      `No H1 headings found \u2014 wrote single note: ${choice.path}`
+    const finalPath = await resolveConflict(plugin.app, proposed, false);
+    await writeNote(plugin, finalPath, output, source, includeFrontmatterOverride);
+    new import_obsidian.Notice(
+      `No H1 headings found \u2014 wrote single note: ${finalPath}`
     );
     return;
   }
   const subfolderName = sanitizeFilename(baseName);
   const proposedSubfolder = `${destFolder.path}/${subfolderName}`;
-  const folderChoice = await resolveConflict(plugin.app, proposedSubfolder, true);
-  if (folderChoice.kind === "skip") {
-    new import_obsidian3.Notice(`Skipped: ${proposedSubfolder} already exists.`);
-    return;
-  }
-  const subfolder = await ensureFolder(plugin.app, folderChoice.path);
+  const finalSubfolderPath = await resolveConflict(plugin.app, proposedSubfolder, true);
+  const subfolder = await ensureFolder(plugin.app, finalSubfolderPath);
   const chapterLinks = [];
   let written = 0;
   for (let i = 0; i < chapters.length; i++) {
@@ -366,16 +122,16 @@ async function writeOutput(plugin, sourceFile, markdown) {
     const safeTitle = sanitizeFilename(chapter.title);
     const paddedIndex = String(i + 1).padStart(2, "0");
     const notePath = `${subfolder.path}/${paddedIndex} - ${safeTitle}.md`;
-    await writeNote(plugin, notePath, chapter.body, sourceFile);
+    await writeNote(plugin, notePath, chapter.body, source, includeFrontmatterOverride);
     written++;
     const noteBasename = notePath.replace(/^.*\//, "").replace(/\.md$/, "");
     chapterLinks.push(`- [[${noteBasename}|${chapter.title}]]`);
   }
   const indexBody = chapterLinks.join("\n");
   const indexPath = `${subfolder.path}/00 - Index.md`;
-  await writeNote(plugin, indexPath, indexBody, sourceFile);
-  new import_obsidian3.Notice(
-    `Converted: ${sourceFile.name} \u2014 ${written} chapter${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
+  await writeNote(plugin, indexPath, indexBody, source, includeFrontmatterOverride);
+  new import_obsidian.Notice(
+    `Converted: ${source.fileName} \u2014 ${written} chapter${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
   );
 }
 function splitOnH1(markdown) {
@@ -405,27 +161,10 @@ function splitOnH1(markdown) {
   }
   return chapters;
 }
-async function resolveConflict(app, proposedPath, isFolder) {
-  let exists;
-  try {
-    exists = await app.vault.adapter.exists(proposedPath);
-  } catch {
-    exists = app.vault.getAbstractFileByPath(proposedPath) !== null;
-  }
-  if (!exists) {
-    return { kind: "write", path: proposedPath };
-  }
-  const choice = await new Promise((resolve) => {
-    new ConflictModal(app, proposedPath, isFolder, resolve).open();
-  });
-  if (choice === "skip") {
-    return { kind: "skip" };
-  }
-  if (choice === "rename") {
-    const renamed = await uniquePath(app, proposedPath);
-    return { kind: "write", path: renamed };
-  }
-  return { kind: "write", path: proposedPath };
+async function resolveConflict(app, proposedPath, _isFolder) {
+  const exists = await pathExists(app, proposedPath);
+  if (!exists) return proposedPath;
+  return await uniquePath(app, proposedPath);
 }
 function sanitizeFilename(name) {
   const cleaned = name.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
@@ -437,7 +176,7 @@ async function ensureFolder(app, path) {
     return app.vault.getRoot();
   }
   const existing = app.vault.getAbstractFileByPath(normalized);
-  if (existing instanceof import_obsidian3.TFolder) {
+  if (existing instanceof import_obsidian.TFolder) {
     return existing;
   }
   if (existing) {
@@ -445,15 +184,14 @@ async function ensureFolder(app, path) {
   }
   return await app.vault.createFolder(normalized);
 }
-async function writeNote(plugin, path, markdown, sourceFile) {
-  const settings = plugin.settings;
+async function writeNote(plugin, path, markdown, source, includeFrontmatter) {
   let content = markdown;
-  if (settings.includeFrontmatter) {
-    const frontmatter = buildFrontmatter(sourceFile);
+  if (includeFrontmatter) {
+    const frontmatter = buildFrontmatter(source);
     content = frontmatter + "\n\n" + markdown;
   }
   const existing = plugin.app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian3.TFile) {
+  if (existing instanceof import_obsidian.TFile) {
     await plugin.app.vault.modify(existing, content);
     return;
   }
@@ -468,14 +206,14 @@ async function writeNote(plugin, path, markdown, sourceFile) {
     }
   }
 }
-function buildFrontmatter(sourceFile) {
+function buildFrontmatter(source) {
   const now = /* @__PURE__ */ new Date();
   const localIso = formatLocalIso(now);
   return [
     "---",
-    `source: ${sourceFile.name}`,
+    `source: ${source.fileName}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"1.0.3"}`,
+    `created by: mu/TEX/tum v${"2.0.0"}`,
     "---"
   ].join("\n");
 }
@@ -510,6 +248,323 @@ async function pathExists(app, path) {
   }
 }
 
+// src/panel.ts
+var VIEW_TYPE_MUTEXTUM = "mutextum-panel";
+var FilePickerModal = class extends import_obsidian2.FuzzySuggestModal {
+  constructor(app, onChoose) {
+    super(app);
+    this.onChoose = onChoose;
+    this.setPlaceholder("Select a document to import\u2026");
+  }
+  getItems() {
+    return this.app.vault.getFiles().filter(
+      (f) => SUPPORTED_EXTENSIONS.includes(f.extension.toLowerCase())
+    );
+  }
+  getItemText(file) {
+    return file.path;
+  }
+  onChooseItem(file) {
+    this.onChoose(file);
+  }
+};
+var MutextumPanel = class extends import_obsidian2.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.queue = [];
+    this.isConverting = false;
+    this.plugin = plugin;
+  }
+  getViewType() {
+    return VIEW_TYPE_MUTEXTUM;
+  }
+  getDisplayText() {
+    return "mu/TEX/tum";
+  }
+  getIcon() {
+    return "file-symlink";
+  }
+  async onOpen() {
+    const container = this.contentEl;
+    container.empty();
+    container.addClass("mutextum-panel");
+    const dropZone = container.createDiv({ cls: "mutextum-dropzone" });
+    dropZone.createEl("p", { text: "Drag documents here" });
+    dropZone.createEl("p", { text: "or", cls: "mutextum-dropzone__or" });
+    this.browseBtn = dropZone.createEl("button", {
+      text: "Browse Vault",
+      cls: "mod-cta"
+    });
+    this.browseBtn.onclick = () => this.openPicker();
+    this.setupDragAndDrop(dropZone);
+    container.createEl("h3", { text: "Queue" });
+    this.listEl = container.createDiv({ cls: "mutextum-queue" });
+    const configEl = container.createDiv({ cls: "mutextum-config" });
+    const row1 = configEl.createDiv({ cls: "mutextum-config-row mutextum-config-row--split" });
+    const destGroup = row1.createDiv({ cls: "mutextum-config-group" });
+    destGroup.createEl("label", { text: "Destination folder:" });
+    this.destFolderInput = destGroup.createEl("input", {
+      type: "text",
+      value: this.plugin.settings.destinationFolder
+    });
+    this.destFolderInput.onchange = () => {
+      this.plugin.settings.destinationFolder = this.destFolderInput.value.trim() || "Imports";
+      void this.plugin.saveSettings();
+    };
+    const actionGroup = row1.createDiv({ cls: "mutextum-action-group" });
+    this.convertBtn = actionGroup.createEl("button", {
+      text: "Convert All",
+      cls: "mod-cta"
+    });
+    this.convertBtn.disabled = true;
+    this.convertBtn.onclick = () => void this.startConversion();
+    this.progressBar = actionGroup.createEl("progress", {
+      attr: { max: "100", value: "0" }
+    });
+    this.progressBar.hide();
+    const row2 = configEl.createDiv({ cls: "mutextum-config-row mutextum-config-row--split" });
+    const fmGroup = row2.createDiv({ cls: "mutextum-config-group" });
+    this.includeFmToggle = fmGroup.createEl("input", { type: "checkbox" });
+    this.includeFmToggle.checked = this.plugin.settings.includeFrontmatter;
+    fmGroup.createEl("label", { text: "Include frontmatter" });
+    this.statusEl = row2.createDiv({ cls: "mutextum-status" });
+    this.renderQueue();
+  }
+  // ──────────────────────────────────────────
+  // Drag and drop
+  // ──────────────────────────────────────────
+  setupDragAndDrop(el) {
+    el.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      el.addClass("is-dragover");
+    });
+    el.addEventListener("dragleave", (e) => {
+      if (!el.contains(e.relatedTarget)) {
+        el.removeClass("is-dragover");
+      }
+    });
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      el.removeClass("is-dragover");
+      const files = e.dataTransfer?.files;
+      if (!files || files.length === 0) return;
+      void this.handleDroppedFiles(files);
+    });
+  }
+  async handleDroppedFiles(files) {
+    let added = 0;
+    let rejected = 0;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      if (!SUPPORTED_EXTENSIONS.includes(ext)) {
+        rejected++;
+        continue;
+      }
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const basename = file.name.replace(/\.[^.]+$/, "");
+      if (this.queue.some((q) => q.fileName === file.name)) {
+        continue;
+      }
+      this.queue.push({
+        fileName: file.name,
+        basename,
+        vaultFile: null,
+        bytes
+      });
+      added++;
+    }
+    this.renderQueue();
+    if (added > 0) {
+      new import_obsidian2.Notice(`Added ${added} file${added === 1 ? "" : "s"} to the queue.`);
+    }
+    if (rejected > 0) {
+      new import_obsidian2.Notice(
+        `${rejected} file${rejected === 1 ? "" : "s"} skipped: unsupported format.`
+      );
+    }
+  }
+  // ──────────────────────────────────────────
+  // Vault picker
+  // ──────────────────────────────────────────
+  openPicker() {
+    new FilePickerModal(this.app, (file) => {
+      this.addVaultFile(file);
+    }).open();
+  }
+  addVaultFile(file) {
+    if (this.queue.some((q) => q.vaultFile?.path === file.path)) {
+      new import_obsidian2.Notice(`${file.name} is already in the queue.`);
+      return;
+    }
+    this.queue.push({
+      fileName: file.name,
+      basename: file.basename,
+      vaultFile: file,
+      bytes: null
+    });
+    this.renderQueue();
+  }
+  // ──────────────────────────────────────────
+  // Queue rendering
+  // ──────────────────────────────────────────
+  removeFromQueue(index) {
+    this.queue.splice(index, 1);
+    this.renderQueue();
+  }
+  renderQueue() {
+    this.listEl.empty();
+    if (this.queue.length === 0) {
+      this.listEl.createEl("p", {
+        text: "No files queued.",
+        cls: "mutextum-empty"
+      });
+      this.convertBtn.disabled = true;
+      return;
+    }
+    this.queue.forEach((item, index) => {
+      const row = this.listEl.createDiv({ cls: "mutextum-queue-item" });
+      row.createSpan({ text: item.fileName });
+      const delBtn = row.createEl("span", {
+        text: "\xD7",
+        cls: "mutextum-delete-btn"
+      });
+      delBtn.onclick = () => this.removeFromQueue(index);
+    });
+    this.convertBtn.disabled = false;
+  }
+  // ──────────────────────────────────────────
+  // Conversion
+  // ──────────────────────────────────────────
+  async startConversion() {
+    if (this.isConverting || this.queue.length === 0) return;
+    this.isConverting = true;
+    this.convertBtn.disabled = true;
+    this.browseBtn.disabled = true;
+    this.convertBtn.hide();
+    this.progressBar.show();
+    this.progressBar.value = 0;
+    this.statusEl.setText("");
+    const total = this.queue.length;
+    let success = 0;
+    let failed = 0;
+    for (let i = 0; i < total; i++) {
+      const item = this.queue[i];
+      this.statusEl.setText(
+        `Converting ${item.fileName} (${i + 1}/${total})\u2026`
+      );
+      try {
+        const bytes = item.vaultFile ? new Uint8Array(await this.app.vault.readBinary(item.vaultFile)) : item.bytes;
+        const handle = convertBytes(bytes);
+        const result = await handle.result;
+        if (result.cancelled) {
+          this.statusEl.setText("Conversion cancelled.");
+          break;
+        }
+        if (!result.ok) {
+          new import_obsidian2.Notice(`Failed: ${item.fileName} \u2014 ${result.errorMessage}`);
+          failed++;
+        } else {
+          await writeOutputFromPanel(
+            this.plugin,
+            { basename: item.basename, fileName: item.fileName },
+            result.markdown ?? "",
+            this.includeFmToggle.checked
+          );
+          success++;
+        }
+      } catch (e) {
+        console.error("mutextum:", e);
+        new import_obsidian2.Notice(`Failed: ${item.fileName}`);
+        failed++;
+      }
+      this.progressBar.value = (i + 1) / total * 100;
+    }
+    this.statusEl.setText(`Done. Success: ${success}, Failed: ${failed}`);
+    this.isConverting = false;
+    this.progressBar.hide();
+    this.convertBtn.show();
+    this.convertBtn.disabled = false;
+    this.browseBtn.disabled = false;
+    this.queue = [];
+    this.renderQueue();
+  }
+};
+
+// src/settings.ts
+var import_obsidian3 = require("obsidian");
+var DEFAULT_SETTINGS = {
+  destinationFolder: "Imports",
+  includeFrontmatter: true
+};
+var MutextumSettingTab = class extends import_obsidian3.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  async setControlValue(key, value) {
+    if (key === "destinationFolder") {
+      const trimmed = typeof value === "string" ? value.trim() : "";
+      if (trimmed === "") {
+        value = DEFAULT_SETTINGS.destinationFolder;
+      }
+    }
+    this.plugin.settings[key] = value;
+    await this.plugin.saveSettings();
+  }
+  getSettingDefinitions() {
+    return [
+      {
+        name: "",
+        render: (setting) => {
+          setting.settingEl.empty();
+          setting.settingEl.addClass("mutextum-settings-header");
+          const headerEl = setting.settingEl.createDiv();
+          headerEl.createSpan({
+            text: "mu/TEX/tum  ",
+            cls: "mutextum-settings-title"
+          });
+          headerEl.createSpan({
+            text: `v${"2.0.0"} (anydoc v${"0.2.4"})`,
+            cls: "mutextum-version-info"
+          });
+        }
+      },
+      {
+        type: "group",
+        heading: "Output",
+        items: [
+          {
+            name: "Destination folder",
+            desc: "Where converted notes are written. Leave blank to use the default (Imports).",
+            control: {
+              type: "folder",
+              key: "destinationFolder",
+              defaultValue: "Imports",
+              validate: (value) => {
+                if (value.includes("..")) {
+                  return "Folder path cannot contain '..'.";
+                }
+                return void 0;
+              }
+            }
+          },
+          {
+            name: "Include frontmatter",
+            desc: "Write YAML frontmatter (source and conversion timestamp)",
+            control: {
+              type: "toggle",
+              key: "includeFrontmatter",
+              defaultValue: true
+            }
+          }
+        ]
+      }
+    ];
+  }
+};
+
 // main.ts
 var MutextumPlugin = class extends import_obsidian4.Plugin {
   constructor() {
@@ -526,7 +581,34 @@ var MutextumPlugin = class extends import_obsidian4.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new MutextumSettingTab(this.app, this));
-    registerFileMenu(this);
+    this.registerView(
+      VIEW_TYPE_MUTEXTUM,
+      (leaf) => new MutextumPanel(leaf, this)
+    );
+    this.addRibbonIcon("file-symlink", "mu/TEX/tum: Import", () => {
+      this.activateView();
+    });
+    this.addCommand({
+      id: "open-panel",
+      name: "Open Import Panel",
+      callback: () => {
+        this.activateView();
+      }
+    });
+  }
+  async activateView() {
+    const { workspace } = this.app;
+    let leaf = null;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_MUTEXTUM);
+    if (leaves.length > 0) {
+      leaf = leaves[0];
+    } else {
+      leaf = workspace.getLeaf(true);
+      await leaf.setViewState({ type: VIEW_TYPE_MUTEXTUM, active: true });
+    }
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
   }
   onunload() {
   }
