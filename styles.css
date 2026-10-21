@@ -1,4 +1,116 @@
 /* ────────────────────────────────────────────── */
+/* Panel                                          */
+/* ────────────────────────────────────────────── */
+
+.mutextum-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.mutextum-dropzone {
+  border: 2px dashed var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.mutextum-dropzone.is-dragover {
+  border-color: var(--interactive-accent);
+  background-color: var(--background-modifier-hover);
+}
+
+.mutextum-dropzone__or {
+  color: var(--text-faint);
+  font-size: 0.85em;
+  margin: 4px 0;
+}
+
+.mutextum-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mutextum-config-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mutextum-config-row--split {
+  justify-content: space-between;
+}
+
+.mutextum-config-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mutextum-config-group input[type="text"] {
+  flex: 1;
+  min-width: 120px;
+}
+
+.mutextum-action-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.mutextum-action-group progress {
+  width: 120px;
+  height: 6px;
+}
+
+.mutextum-status {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  text-align: right;
+  min-height: 1.2em;
+}
+
+.mutextum-queue {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 8px;
+  min-height: 100px;
+}
+
+.mutextum-queue-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.mutextum-queue-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.mutextum-delete-btn {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.mutextum-delete-btn:hover {
+  color: var(--text-error);
+}
+
+.mutextum-empty {
+  color: var(--text-faint);
+  text-align: center;
+  margin: 20px 0;
+}
+
+/* ────────────────────────────────────────────── */
 /* Conversion progress modal                      */
 /* ────────────────────────────────────────────── */
 
