@@ -377,6 +377,7 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
     }
     this.renderQueue();
     if (added > 0) {
+      this.statusEl.setText("");
       new import_obsidian2.Notice(`Added ${added} file${added === 1 ? "" : "s"} to the queue.`);
     }
     if (rejected > 0) {
@@ -404,6 +405,7 @@ var MutextumPanel = class extends import_obsidian2.ItemView {
       vaultFile: file,
       bytes: null
     });
+    this.statusEl.setText("");
     this.renderQueue();
   }
   // ──────────────────────────────────────────
