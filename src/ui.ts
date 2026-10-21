@@ -1,102 +1,22 @@
 // src/ui.ts
 
-import { App, Menu, TFile, TFolder, Notice } from "obsidian";
+import { App, TFile, TFolder, Notice } from "obsidian";
 import type MutextumPlugin from "../main";
-import { convertBytes } from "./converter";
-import { ConversionProgressModal, ConversionErrorModal, ConflictModal, ConflictChoice } from "./modal";
 
 declare const PLUGIN_VERSION: string;
 
 // All formats anydoc handles:
-const SUPPORTED_EXTENSIONS = [ "doc", "docx", "odt", "pdf", "ppt", "pptx", "rtf", "epub", "xlsx", "ods", "odp", "csv", ];
+const SUPPORTED_EXTENSIONS = [
+    "doc", "docx", "odt", "pdf", "ppt", "pptx", "rtf", "epub", "xlsx", "ods", "odp", "csv",
+];
 
-// ──────────────────────────────────────────────
-// File menu registration
-// ──────────────────────────────────────────────
-
-export function registerFileMenu(plugin: MutextumPlugin): void {
-    plugin.registerEvent(
-        // @ts-ignore — `file-menu` is a valid event but may be missing from typings
-        plugin.app.workspace.on("file-menu", (menu: Menu, file: TFile) => {
-            if (!SUPPORTED_EXTENSIONS.includes(file.extension.toLowerCase())) {
-                return;
-            }
-
-            menu.addItem((item) => {
-                item
-                    .setTitle("mu/TEX/tum → Markdown")
-                    .setIcon("file-symlink")
-                    .onClick(() => {
-                        void convertFile(plugin, file);
-                    });
-            });
-        })
-    );
-}
-
-// ──────────────────────────────────────────────
-// Conversion orchestration
-// ──────────────────────────────────────────────
-
-export async function convertFile(plugin: MutextumPlugin, file: TFile): Promise<void> {
-    let bytes: Uint8Array;
-    try {
-        const arrayBuffer = await plugin.app.vault.readBinary(file);
-        bytes = new Uint8Array(arrayBuffer);
-    } catch (e) {
-        console.error("mutextum: failed to read file:", e);
-        new ConversionErrorModal(plugin.app, file.name, "io", String(e)).open();
-        return;
-    }
-
-    let handle: ReturnType<typeof convertBytes>;
-    let progressModal: ConversionProgressModal;
-
-    try {
-        handle = convertBytes(bytes);
-    } catch (e) {
-        console.error("mutextum: failed to spawn worker:", e);
-        new ConversionErrorModal(plugin.app, file.name, "worker", String(e)).open();
-        return;
-    }
-
-    progressModal = new ConversionProgressModal(plugin.app, file.name, () => {
-        handle.cancel();
-    });
-    progressModal.open();
-
-    const result = await handle.result;
-
-    progressModal.close();
-
-    if (result.cancelled) {
-        new Notice("Conversion cancelled.");
-        return;
-    }
-
-    if (!result.ok) {
-        new ConversionErrorModal(
-            plugin.app,
-            file.name,
-            result.errorCode ?? "unknown",
-            result.errorMessage ?? "No additional details."
-        ).open();
-        return;
-    }
-
-    try {
-        await writeOutput(plugin, file, result.markdown ?? "");
-    } catch (e) {
-        console.error("mutextum: failed to write output:", e);
-        new ConversionErrorModal(plugin.app, file.name, "io", String(e)).open();
-    }
-}
+export { SUPPORTED_EXTENSIONS };
 
 // ──────────────────────────────────────────────
 // Link stripping
 // ──────────────────────────────────────────────
 
-function cleanMarkdown(markdown: string): string {
+export function cleanMarkdown(markdown: string): string {
     return markdown
         // Strip jw.org hyperlinks
         .replace(/\[([^\]]+)\]\(https?:\/\/[^)]*\.jw\.org\/[^)]+\)/g, "$1")
@@ -110,11 +30,11 @@ function cleanMarkdown(markdown: string): string {
         .replace(/(?<!\*)\*(?!\*)\s+(?<!\*)\*(?!\*)/g, " ")
         // Collapse truly-adjacent markers (no space between)
         .replace(/\*\*\*\*/g, "")
-        .replace(/____/g, "");
+        .replace(/____/g, "__ __");
 }
 
 // ──────────────────────────────────────────────
-// Output writing
+// Output writing (called from the panel)
 // ──────────────────────────────────────────────
 
 interface Chapter {
@@ -122,30 +42,31 @@ interface Chapter {
     body: string;
 }
 
-async function writeOutput(
+export interface SourceInfo {
+    basename: string;
+    fileName: string;
+}
+
+export async function writeOutputFromPanel(
     plugin: MutextumPlugin,
-    sourceFile: TFile,
-    markdown: string
+    source: SourceInfo,
+    markdown: string,
+    includeFrontmatterOverride: boolean
 ): Promise<void> {
     const settings = plugin.settings;
     const output = cleanMarkdown(markdown);
-    const baseName = sourceFile.basename;
+    const baseName = source.basename;
     const destFolder = await ensureFolder(plugin.app, settings.destinationFolder);
     const chapters = splitOnH1(output);
 
     // ── Fallback: single note (no H1 headings) ──
     if (chapters.length === 0) {
         const proposed = `${destFolder.path}/${baseName}.md`;
-        const choice = await resolveConflict(plugin.app, proposed, false);
+        const finalPath = await resolveConflict(plugin.app, proposed, false);
 
-        if (choice.kind === "skip") {
-            new Notice(`Skipped: ${proposed} already exists.`);
-            return;
-        }
-
-        await writeNote(plugin, choice.path, output, sourceFile);
+        await writeNote(plugin, finalPath, output, source, includeFrontmatterOverride);
         new Notice(
-            `No H1 headings found \u2014 wrote single note: ${choice.path}`
+            `No H1 headings found \u2014 wrote single note: ${finalPath}`
         );
         return;
     }
@@ -153,14 +74,9 @@ async function writeOutput(
     // ── Multi-note mode ──
     const subfolderName = sanitizeFilename(baseName);
     const proposedSubfolder = `${destFolder.path}/${subfolderName}`;
-    const folderChoice = await resolveConflict(plugin.app, proposedSubfolder, true);
+    const finalSubfolderPath = await resolveConflict(plugin.app, proposedSubfolder, true);
 
-    if (folderChoice.kind === "skip") {
-        new Notice(`Skipped: ${proposedSubfolder} already exists.`);
-        return;
-    }
-
-    const subfolder = await ensureFolder(plugin.app, folderChoice.path);
+    const subfolder = await ensureFolder(plugin.app, finalSubfolderPath);
     const chapterLinks: string[] = [];
     let written = 0;
 
@@ -170,7 +86,7 @@ async function writeOutput(
         const paddedIndex = String(i + 1).padStart(2, "0");
         const notePath = `${subfolder.path}/${paddedIndex} - ${safeTitle}.md`;
 
-        await writeNote(plugin, notePath, chapter.body, sourceFile);
+        await writeNote(plugin, notePath, chapter.body, source, includeFrontmatterOverride);
         written++;
 
         const noteBasename = notePath.replace(/^.*\//, "").replace(/\.md$/, "");
@@ -179,10 +95,10 @@ async function writeOutput(
 
     const indexBody = chapterLinks.join("\n");
     const indexPath = `${subfolder.path}/00 - Index.md`;
-    await writeNote(plugin, indexPath, indexBody, sourceFile);
+    await writeNote(plugin, indexPath, indexBody, source, includeFrontmatterOverride);
 
     new Notice(
-        `Converted: ${sourceFile.name} \u2014 ${written} chapter` +
+        `Converted: ${source.fileName} \u2014 ${written} chapter` +
         `${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
     );
 }
@@ -191,7 +107,7 @@ async function writeOutput(
 // H1 splitting
 // ──────────────────────────────────────────────
 
-function splitOnH1(markdown: string): Chapter[] {
+export function splitOnH1(markdown: string): Chapter[] {
     const lines = markdown.split("\n");
     const chapters: Chapter[] = [];
     let currentTitle: string | null = null;
@@ -223,50 +139,24 @@ function splitOnH1(markdown: string): Chapter[] {
 }
 
 // ──────────────────────────────────────────────
-// Conflict resolution
+// Conflict resolution (always rename)
 // ──────────────────────────────────────────────
-
-type ConflictResult =
-    | { kind: "write"; path: string }
-    | { kind: "skip" };
 
 async function resolveConflict(
     app: App,
     proposedPath: string,
-    isFolder: boolean
-): Promise<ConflictResult> {
-    let exists: boolean;
-    try {
-        exists = await app.vault.adapter.exists(proposedPath);
-    } catch {
-        exists = app.vault.getAbstractFileByPath(proposedPath) !== null;
-    }
-
-    if (!exists) {
-        return { kind: "write", path: proposedPath };
-    }
-
-    const choice = await new Promise<ConflictChoice>((resolve) => {
-        new ConflictModal(app, proposedPath, isFolder, resolve).open();
-    });
-
-    if (choice === "skip") {
-        return { kind: "skip" };
-    }
-
-    if (choice === "rename") {
-        const renamed = await uniquePath(app, proposedPath);
-        return { kind: "write", path: renamed };
-    }
-
-    return { kind: "write", path: proposedPath };
+    _isFolder: boolean
+): Promise<string> {
+    const exists = await pathExists(app, proposedPath);
+    if (!exists) return proposedPath;
+    return await uniquePath(app, proposedPath);
 }
 
 // ──────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────
 
-function sanitizeFilename(name: string): string {
+export function sanitizeFilename(name: string): string {
     const cleaned = name
         .replace(/[\\/:*?"<>|]/g, "")
         .replace(/\s+/g, " ")
@@ -274,7 +164,7 @@ function sanitizeFilename(name: string): string {
     return cleaned || "Untitled";
 }
 
-async function ensureFolder(app: App, path: string): Promise<TFolder> {
+export async function ensureFolder(app: App, path: string): Promise<TFolder> {
     const normalized = path.replace(/^\/+|\/+$/g, "");
     if (!normalized) {
         return app.vault.getRoot();
@@ -295,13 +185,13 @@ async function writeNote(
     plugin: MutextumPlugin,
     path: string,
     markdown: string,
-    sourceFile: TFile
+    source: SourceInfo,
+    includeFrontmatter: boolean
 ): Promise<void> {
-    const settings = plugin.settings;
     let content = markdown;
 
-    if (settings.includeFrontmatter) {
-        const frontmatter = buildFrontmatter(sourceFile);
+    if (includeFrontmatter) {
+        const frontmatter = buildFrontmatter(source);
         content = frontmatter + "\n\n" + markdown;
     }
 
@@ -323,12 +213,12 @@ async function writeNote(
     }
 }
 
-function buildFrontmatter(sourceFile: TFile): string {
+function buildFrontmatter(source: SourceInfo): string {
     const now = new Date();
     const localIso = formatLocalIso(now);
     return [
         "---",
-        `source: ${sourceFile.name}`,
+        `source: ${source.fileName}`,
         `converted: ${localIso}`,
         `created by: mu/TEX/tum v${PLUGIN_VERSION}`,
         "---",
