@@ -65,9 +65,6 @@ export async function writeOutputFromPanel(
         const finalPath = await resolveConflict(plugin.app, proposed, false);
 
         await writeNote(plugin, finalPath, output, source, includeFrontmatterOverride);
-        new Notice(
-            `No H1 headings found \u2014 wrote single note: ${finalPath}`
-        );
         return;
     }
 
@@ -97,9 +94,9 @@ export async function writeOutputFromPanel(
     const indexPath = `${subfolder.path}/00 - Index.md`;
     await writeNote(plugin, indexPath, indexBody, source, includeFrontmatterOverride);
 
-    new Notice(
-        `Converted: ${source.fileName} \u2014 ${written} chapter` +
-        `${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
+    // new Notice(
+    //     `Converted: ${source.fileName} \u2014 ${written} chapter` +
+    //     `${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
     );
 }
 
