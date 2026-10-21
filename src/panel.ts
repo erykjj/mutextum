@@ -247,10 +247,8 @@ export class MutextumPanel extends ItemView {
         this.queue.forEach((item, index) => {
             const row = this.listEl.createDiv({ cls: "mutextum-queue-item" });
             row.createSpan({ text: item.fileName });
-            const delBtn = row.createEl("span", {
-                text: "\u00d7",
-                cls: "mutextum-delete-btn",
-            });
+            const delBtn = row.createEl("span", { cls: "mutextum-delete-btn" });
+            delBtn.setText("\u00d7");
             delBtn.onclick = () => this.removeFromQueue(index);
         });
 

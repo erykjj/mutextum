@@ -1,8 +1,8 @@
 // main.ts
 
 import { Plugin, WorkspaceLeaf } from "obsidian";
-import { MutextumPanel, VIEW_TYPE_MUTEXTUM } from "./src/panel";
 import { MutextumSettingTab, MutextumSettings, DEFAULT_SETTINGS } from "./src/settings";
+import { MutextumPanel, VIEW_TYPE_MUTEXTUM } from "./src/panel";
 
 export default class MutextumPlugin extends Plugin {
     settings: MutextumSettings = DEFAULT_SETTINGS;
@@ -27,19 +27,19 @@ export default class MutextumPlugin extends Plugin {
         );
 
         this.addRibbonIcon("file-symlink", "mu/TEX/tum: Import", () => {
-            this.activateView();
+            void this.activateView();
         });
 
         this.addCommand({
             id: "open-panel",
             name: "Open Import Panel",
             callback: () => {
-                this.activateView();
+                void this.activateView();
             }
         });
     }
 
-    async activateView() {
+    async activateView(): Promise<void> {
         const { workspace } = this.app;
 
         let leaf: WorkspaceLeaf | null = null;
@@ -53,7 +53,7 @@ export default class MutextumPlugin extends Plugin {
         }
 
         if (leaf) {
-            workspace.revealLeaf(leaf);
+            await workspace.revealLeaf(leaf);
         }
     }
 
