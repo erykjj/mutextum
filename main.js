@@ -59,7 +59,7 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
             cls: "mutextum-settings-title"
           });
           headerEl.createSpan({
-            text: `v${"2.0.1"} (anydoc v${"0.2.4"})`,
+            text: `v${"2.0.2"} (anydoc v${"0.2.4"})`,
             cls: "mutextum-version-info"
           });
         }
@@ -286,7 +286,7 @@ function buildFrontmatter(source) {
     "---",
     `source: ${source.fileName}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"2.0.1"}`,
+    `created by: mu/TEX/tum v${"2.0.2"}`,
     "---"
   ].join("\n");
 }
@@ -501,8 +501,9 @@ var MutextumPanel = class extends import_obsidian3.ItemView {
     this.queue.forEach((item, index) => {
       const row = this.listEl.createDiv({ cls: "mutextum-queue-item" });
       row.createSpan({ text: item.fileName });
-      const delBtn = row.createEl("span", { cls: "mutextum-delete-btn" });
-      delBtn.setText("\xD7");
+      const delBtn = row.createDiv({ cls: "clickable-icon mutextum-delete-btn" });
+      (0, import_obsidian3.setIcon)(delBtn, "x");
+      delBtn.setAttribute("aria-label", "Remove from queue");
       delBtn.onclick = () => this.removeFromQueue(index);
     });
     this.convertBtn.disabled = false;
