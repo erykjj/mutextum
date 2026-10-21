@@ -11,7 +11,7 @@
 ### Removed
 
 ____
-## 2.0.1 - 2026-10-20
+## 2.0.2 - 2026-10-20
 ### Added
 
 - Implemented panel UI instead of right-click
@@ -32,7 +32,7 @@ ____
 - Initial *beta* release
 
 ____
-[2.0.1]:https://github.com/erykjj/mutextum/releases/tag/2.0.1
+[2.0.2]:https://github.com/erykjj/mutextum/releases/tag/2.0.2
 [1.0.3]:https://github.com/erykjj/mutextum/releases/tag/1.0.3
 [1.0.1]:https://github.com/erykjj/mutextum/releases/tag/1.0.1
 [0.9.3]:https://github.com/erykjj/mutextum/releases/tag/0.9.3
