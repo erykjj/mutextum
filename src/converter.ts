@@ -11,16 +11,10 @@ export interface ConversionResult {
 }
 
 export interface ConversionHandle {
-    /** Resolves when the conversion completes, fails, or is cancelled. */
     result: Promise<ConversionResult>;
-    /** Terminate the worker immediately. The result promise resolves with cancelled: true. */
     cancel: () => void;
 }
 
-/**
- * Shape of the message the worker posts back. Mirrors the worker's
- * ConvertSuccess | ConvertError union in src/worker.ts.
- */
 interface WorkerMessage {
     id: number;
     ok: boolean;
@@ -29,13 +23,6 @@ interface WorkerMessage {
     message?: string;
 }
 
-/**
- * Convert file bytes to Markdown in a fresh Web Worker.
- *
- * A new worker is spawned for every call and terminated when the
- * conversion finishes (success, failure, or cancellation). This keeps
- * anydoc's WASM linear memory from lingering between conversions.
- */
 export function convertBytes(bytes: Uint8Array): ConversionHandle {
     const blob = new Blob([WORKER_SOURCE], { type: "application/javascript" });
     const blobUrl = URL.createObjectURL(blob);
