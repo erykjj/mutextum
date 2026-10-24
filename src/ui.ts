@@ -1,6 +1,6 @@
 // src/ui.ts
 
-import { App, TFile, TFolder, Notice } from "obsidian";
+import { App, TFile, TFolder } from "obsidian";
 import type MutextumPlugin from "../main";
 
 declare const PLUGIN_VERSION: string;
@@ -75,7 +75,6 @@ export async function writeOutputFromPanel(
 
     const subfolder = await ensureFolder(plugin.app, finalSubfolderPath);
     const chapterLinks: string[] = [];
-    let written = 0;
 
     for (let i = 0; i < chapters.length; i++) {
         const chapter = chapters[i];
@@ -84,7 +83,6 @@ export async function writeOutputFromPanel(
         const notePath = `${subfolder.path}/${paddedIndex} - ${safeTitle}.md`;
 
         await writeNote(plugin, notePath, chapter.body, source, includeFrontmatterOverride);
-        written++;
 
         const noteBasename = notePath.replace(/^.*\//, "").replace(/\.md$/, "");
         chapterLinks.push(`- [[${noteBasename}|${chapter.title}]]`);
@@ -93,11 +91,6 @@ export async function writeOutputFromPanel(
     const indexBody = chapterLinks.join("\n");
     const indexPath = `${subfolder.path}/00 - Index.md`;
     await writeNote(plugin, indexPath, indexBody, source, includeFrontmatterOverride);
-
-    // new Notice(
-    //     `Converted: ${source.fileName} \u2014 ${written} chapter` +
-    //     `${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
-    // );
 }
 
 // ──────────────────────────────────────────────
