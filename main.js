@@ -59,7 +59,7 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
             cls: "mutextum-settings-title"
           });
           headerEl.createSpan({
-            text: `v${"2.0.3"} (anydoc v${"0.2.4"})`,
+            text: `v${"2.0.4"} (anydoc v${"0.2.4"})`,
             cls: "mutextum-version-info"
           });
         }
@@ -186,14 +186,12 @@ async function writeOutputFromPanel(plugin, source, markdown, includeFrontmatter
   const finalSubfolderPath = await resolveConflict(plugin.app, proposedSubfolder, true);
   const subfolder = await ensureFolder(plugin.app, finalSubfolderPath);
   const chapterLinks = [];
-  let written = 0;
   for (let i = 0; i < chapters.length; i++) {
     const chapter = chapters[i];
     const safeTitle = sanitizeFilename(chapter.title);
     const paddedIndex = String(i + 1).padStart(2, "0");
     const notePath = `${subfolder.path}/${paddedIndex} - ${safeTitle}.md`;
     await writeNote(plugin, notePath, chapter.body, source, includeFrontmatterOverride);
-    written++;
     const noteBasename = notePath.replace(/^.*\//, "").replace(/\.md$/, "");
     chapterLinks.push(`- [[${noteBasename}|${chapter.title}]]`);
   }
@@ -280,7 +278,7 @@ function buildFrontmatter(source) {
     "---",
     `source: ${source.fileName}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"2.0.3"}`,
+    `created by: mu/TEX/tum v${"2.0.4"}`,
     "---"
   ].join("\n");
 }
