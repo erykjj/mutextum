@@ -59,7 +59,7 @@ var MutextumSettingTab = class extends import_obsidian.PluginSettingTab {
             cls: "mutextum-settings-title"
           });
           headerEl.createSpan({
-            text: `v${"2.0.2"} (anydoc v${"0.2.4"})`,
+            text: `v${"2.0.3"} (anydoc v${"0.2.4"})`,
             cls: "mutextum-version-info"
           });
         }
@@ -179,9 +179,6 @@ async function writeOutputFromPanel(plugin, source, markdown, includeFrontmatter
     const proposed = `${destFolder.path}/${baseName}.md`;
     const finalPath = await resolveConflict(plugin.app, proposed, false);
     await writeNote(plugin, finalPath, output, source, includeFrontmatterOverride);
-    new import_obsidian2.Notice(
-      `No H1 headings found \u2014 wrote single note: ${finalPath}`
-    );
     return;
   }
   const subfolderName = sanitizeFilename(baseName);
@@ -203,9 +200,6 @@ async function writeOutputFromPanel(plugin, source, markdown, includeFrontmatter
   const indexBody = chapterLinks.join("\n");
   const indexPath = `${subfolder.path}/00 - Index.md`;
   await writeNote(plugin, indexPath, indexBody, source, includeFrontmatterOverride);
-  new import_obsidian2.Notice(
-    `Converted: ${source.fileName} \u2014 ${written} chapter${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
-  );
 }
 function splitOnH1(markdown) {
   const lines = markdown.split("\n");
@@ -286,7 +280,7 @@ function buildFrontmatter(source) {
     "---",
     `source: ${source.fileName}`,
     `converted: ${localIso}`,
-    `created by: mu/TEX/tum v${"2.0.2"}`,
+    `created by: mu/TEX/tum v${"2.0.3"}`,
     "---"
   ].join("\n");
 }
