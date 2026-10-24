@@ -97,7 +97,7 @@ export async function writeOutputFromPanel(
     // new Notice(
     //     `Converted: ${source.fileName} \u2014 ${written} chapter` +
     //     `${written === 1 ? "" : "s"} \u2192 ${subfolder.path}`
-    );
+    // );
 }
 
 // ──────────────────────────────────────────────
