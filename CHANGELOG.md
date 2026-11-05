@@ -11,6 +11,19 @@
 ### Removed
 
 ____
+## 2.1.0 - 2026-11-05
+### Added
+
+- Added right-click menu option to queue file from vault file list
+
+### Changed
+
+- Various tweaks and improvements
+
+### Fixed
+
+- Various small fixes
+
 ## 2.0.4 - 2026-10-24
 ### Changed
 
@@ -37,6 +50,7 @@ ____
 - Initial *beta* release
 
 ____
+[2.1.0]:https://github.com/erykjj/mutextum/releases/tag/2.1.0
 [2.0.4]:https://github.com/erykjj/mutextum/releases/tag/2.0.4
 [2.0.2]:https://github.com/erykjj/mutextum/releases/tag/2.0.2
 [1.0.3]:https://github.com/erykjj/mutextum/releases/tag/1.0.3
