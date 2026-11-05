@@ -2,6 +2,7 @@
 
 import { App, ItemView, WorkspaceLeaf, TFile, Notice, FuzzySuggestModal, setIcon } from "obsidian";
 import { convertBytes } from "./converter";
+import type { ConversionHandle } from "./converter";
 import type MutextumPlugin from "../main";
 import { writeOutputFromPanel, SUPPORTED_EXTENSIONS } from "./ui";
 
@@ -55,6 +56,7 @@ export class MutextumPanel extends ItemView {
 
     private queue: QueueItem[] = [];
     private isConverting = false;
+    private activeHandle: ConversionHandle | null = null;
 
     private listEl!: HTMLElement;
     private progressBar!: HTMLProgressElement;
@@ -115,7 +117,13 @@ export class MutextumPanel extends ItemView {
             cls: "mod-cta",
         });
         this.convertBtn.disabled = true;
-        this.convertBtn.onclick = () => void this.startConversion();
+        this.convertBtn.onclick = () => {
+            if (this.isConverting) {
+                this.activeHandle?.cancel();
+            } else {
+                void this.startConversion();
+            }
+        };
 
         this.progressBar = actionGroup.createEl("progress", {
             attr: { max: "100", value: "0" },
@@ -130,6 +138,8 @@ export class MutextumPanel extends ItemView {
         fmGroup.createEl("label", { text: "Include frontmatter" });
 
         this.statusEl = row2.createDiv({ cls: "mutextum-status" });
+        this.statusEl.setAttribute("role", "status");
+        this.statusEl.setAttribute("aria-live", "polite");
 
         this.renderQueue();
     }
@@ -200,7 +210,7 @@ export class MutextumPanel extends ItemView {
     }
 
     // ──────────────────────────────────────────
-    // Vault picker
+    // Vault picker + external add
     // ──────────────────────────────────────────
 
     private openPicker(): void {
@@ -209,7 +219,7 @@ export class MutextumPanel extends ItemView {
         }).open();
     }
 
-    private addVaultFile(file: TFile): void {
+    addVaultFile(file: TFile): void {
         if (this.queue.some((q) => q.vaultFile?.path === file.path)) {
             new Notice(`${file.name} is already in the queue.`);
             return;
@@ -220,7 +230,7 @@ export class MutextumPanel extends ItemView {
             vaultFile: file,
             bytes: null,
         });
-        this.statusEl.setText("");
+        if (this.statusEl) this.statusEl.setText("");
         this.renderQueue();
     }
 
@@ -265,9 +275,9 @@ export class MutextumPanel extends ItemView {
         if (this.isConverting || this.queue.length === 0) return;
 
         this.isConverting = true;
-        this.convertBtn.disabled = true;
+        this.convertBtn.disabled = false;
+        this.convertBtn.setText("Cancel");
         this.browseBtn.disabled = true;
-        this.convertBtn.hide();
         this.progressBar.show();
         this.progressBar.value = 0;
         this.statusEl.setText("");
@@ -275,53 +285,72 @@ export class MutextumPanel extends ItemView {
         const total = this.queue.length;
         let success = 0;
         let failed = 0;
+        let completed = false;
+        let cancelled = false;
 
-        for (let i = 0; i < total; i++) {
-            const item = this.queue[i];
-            this.statusEl.setText(
-                `Converting ${item.fileName} (${i + 1}/${total})\u2026`
-            );
+        try {
+            for (let i = 0; i < total; i++) {
+                const item = this.queue[i];
+                this.statusEl.setText(
+                    `Converting ${item.fileName} (${i + 1}/${total})\u2026`
+                );
 
-            try {
-                const bytes = item.vaultFile
-                    ? new Uint8Array(await this.app.vault.readBinary(item.vaultFile))
-                    : item.bytes!;
-                const handle = convertBytes(bytes);
-                const result = await handle.result;
+                try {
+                    const bytes = item.vaultFile
+                        ? new Uint8Array(await this.app.vault.readBinary(item.vaultFile))
+                        : item.bytes!;
+                    const handle = convertBytes(bytes);
+                    this.activeHandle = handle;
+                    const result = await handle.result;
+                    this.activeHandle = null;
 
-                if (result.cancelled) {
-                    this.statusEl.setText("Conversion cancelled.");
-                    break;
-                }
+                    if (result.cancelled) {
+                        this.statusEl.setText("Conversion cancelled.");
+                        cancelled = true;
+                        break;
+                    }
 
-                if (!result.ok) {
-                    new Notice(`Failed: ${item.fileName} \u2014 ${result.errorMessage}`);
+                    if (!result.ok) {
+                        new Notice(`Failed: ${item.fileName} \u2014 ${result.errorMessage}`);
+                        failed++;
+                    } else {
+                        await writeOutputFromPanel(
+                            this.plugin,
+                            { basename: item.basename, fileName: item.fileName },
+                            result.markdown ?? "",
+                            this.includeFmToggle.checked
+                        );
+                        success++;
+                    }
+                } catch (e) {
+                    console.error("mutextum:", e);
+                    new Notice(`Failed: ${item.fileName}`);
                     failed++;
-                } else {
-                    await writeOutputFromPanel(
-                        this.plugin,
-                        { basename: item.basename, fileName: item.fileName },
-                        result.markdown ?? "",
-                        this.includeFmToggle.checked
-                    );
-                    success++;
                 }
-            } catch (e) {
-                console.error("mutextum:", e);
-                new Notice(`Failed: ${item.fileName}`);
-                failed++;
+
+                this.progressBar.value = ((i + 1) / total) * 100;
             }
 
-            this.progressBar.value = ((i + 1) / total) * 100;
-        }
+            if (!cancelled) {
+                this.statusEl.setText(`Done. Success: ${success}, Failed: ${failed}`);
+            }
+            completed = true;
+        } finally {
+            this.isConverting = false;
+            this.activeHandle = null;
+            this.progressBar.hide();
+            this.convertBtn.setText("Convert All");
+            this.convertBtn.disabled = this.queue.length === 0;
+            this.browseBtn.disabled = false;
 
-        this.statusEl.setText(`Done. Success: ${success}, Failed: ${failed}`);
-        this.isConverting = false;
-        this.progressBar.hide();
-        this.convertBtn.show();
-        this.convertBtn.disabled = false;
-        this.browseBtn.disabled = false;
-        this.queue = [];
-        this.renderQueue();
+            if (!completed && !cancelled) {
+                this.statusEl.setText("Conversion aborted.");
+            }
+
+            if (completed && !cancelled) {
+                this.queue = [];
+            }
+            this.renderQueue();
+        }
     }
 }

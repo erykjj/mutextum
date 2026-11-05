@@ -1,6 +1,6 @@
 // src/ui.ts
 
-import { App, TFile, TFolder } from "obsidian";
+import { App, TFolder } from "obsidian";
 import type MutextumPlugin from "../main";
 
 declare const PLUGIN_VERSION: string;
@@ -55,26 +55,35 @@ export async function writeOutputFromPanel(
 ): Promise<void> {
     const settings = plugin.settings;
     const output = cleanMarkdown(markdown);
-    const baseName = source.basename;
+    const baseName = sanitizeFilename(source.basename);
     const destFolder = await ensureFolder(plugin.app, settings.destinationFolder);
-    const chapters = splitOnH1(output);
+    const { preamble, chapters } = splitOnH1(output);
 
     // ── Fallback: single note (no H1 headings) ──
     if (chapters.length === 0) {
         const proposed = `${destFolder.path}/${baseName}.md`;
-        const finalPath = await resolveConflict(plugin.app, proposed, false);
+        const finalPath = await uniquePath(plugin.app, proposed, false);
 
         await writeNote(plugin, finalPath, output, source, includeFrontmatterOverride);
         return;
     }
 
     // ── Multi-note mode ──
-    const subfolderName = sanitizeFilename(baseName);
-    const proposedSubfolder = `${destFolder.path}/${subfolderName}`;
-    const finalSubfolderPath = await resolveConflict(plugin.app, proposedSubfolder, true);
+    const proposedSubfolder = `${destFolder.path}/${baseName}`;
+    const finalSubfolderPath = await uniquePath(plugin.app, proposedSubfolder, true);
 
     const subfolder = await ensureFolder(plugin.app, finalSubfolderPath);
     const chapterLinks: string[] = [];
+
+    if (preamble !== null) {
+        const preamblePath = `${subfolder.path}/00 - Preamble.md`;
+        const actualPreamblePath = await writeNote(
+            plugin, preamblePath, preamble, source, includeFrontmatterOverride
+        );
+        chapterLinks.push(
+            `- [[${linkTargetFromPath(actualPreamblePath)}|Preamble]]`
+        );
+    }
 
     for (let i = 0; i < chapters.length; i++) {
         const chapter = chapters[i];
@@ -82,24 +91,28 @@ export async function writeOutputFromPanel(
         const paddedIndex = String(i + 1).padStart(2, "0");
         const notePath = `${subfolder.path}/${paddedIndex} - ${safeTitle}.md`;
 
-        await writeNote(plugin, notePath, chapter.body, source, includeFrontmatterOverride);
+        const actualNotePath = await writeNote(
+            plugin, notePath, chapter.body, source, includeFrontmatterOverride
+        );
 
-        const noteBasename = notePath.replace(/^.*\//, "").replace(/\.md$/, "");
-        chapterLinks.push(`- [[${noteBasename}|${chapter.title}]]`);
+        chapterLinks.push(
+            `- [[${linkTargetFromPath(actualNotePath)}|${escapeAlias(chapter.title)}]]`
+        );
     }
 
     const indexBody = chapterLinks.join("\n");
-    const indexPath = `${subfolder.path}/00 - Index.md`;
+    const indexPath = `${subfolder.path}/_Index.md`;
     await writeNote(plugin, indexPath, indexBody, source, includeFrontmatterOverride);
 }
 
 // ──────────────────────────────────────────────
-// H1 splitting
+// H1 splitting + preamble detection
 // ──────────────────────────────────────────────
 
-export function splitOnH1(markdown: string): Chapter[] {
+export function splitOnH1(markdown: string): { preamble: string | null; chapters: Chapter[] } {
     const lines = markdown.split("\n");
     const chapters: Chapter[] = [];
+    const preambleLines: string[] = [];
     let currentTitle: string | null = null;
     let currentBody: string[] = [];
 
@@ -115,6 +128,8 @@ export function splitOnH1(markdown: string): Chapter[] {
             currentBody = [];
         } else if (currentTitle !== null) {
             currentBody.push(line);
+        } else {
+            preambleLines.push(line);
         }
     }
 
@@ -125,33 +140,81 @@ export function splitOnH1(markdown: string): Chapter[] {
         });
     }
 
-    return chapters;
+    const preamble = isSubstantive(preambleLines.join("\n"))
+        ? preambleLines.join("\n").trim()
+        : null;
+
+    return { preamble, chapters };
+}
+
+function isSubstantive(text: string): boolean {
+    const lines = text.split("\n");
+    let inFrontmatter = false;
+    let frontmatterSettled = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        if (i === 0 && trimmed === "---") {
+            inFrontmatter = true;
+            continue;
+        }
+        if (inFrontmatter) {
+            if (trimmed === "---") {
+                inFrontmatter = false;
+                frontmatterSettled = true;
+            }
+            continue;
+        }
+        if (!frontmatterSettled && trimmed === "") continue;
+        if (trimmed === "") continue;
+        if (/^([-*_])\s*\1\s*\1[\s\S]*$/.test(trimmed)) continue; // hr
+        return true;
+    }
+    return false;
 }
 
 // ──────────────────────────────────────────────
-// Conflict resolution (always rename)
+// Conflict resolution (always rename; self-contained)
 // ──────────────────────────────────────────────
 
-async function resolveConflict(
-    app: App,
-    proposedPath: string,
-    _isFolder: boolean
-): Promise<string> {
-    const exists = await pathExists(app, proposedPath);
-    if (!exists) return proposedPath;
-    return await uniquePath(app, proposedPath);
+export async function uniquePath(app: App, path: string, isFolder: boolean): Promise<string> {
+    if (!(await pathExists(app, path))) return path;
+
+    const { base, ext } = isFolder
+        ? { base: path, ext: "" }
+        : (() => {
+            const dot = path.lastIndexOf(".");
+            return dot >= 0
+                ? { base: path.slice(0, dot), ext: path.slice(dot) }
+                : { base: path, ext: "" };
+        })();
+
+    let counter = 1;
+    let candidate = `${base} (${counter})${ext}`;
+    while (await pathExists(app, candidate)) {
+        counter++;
+        candidate = `${base} (${counter})${ext}`;
+    }
+    return candidate;
 }
 
 // ──────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────
 
+const WINDOWS_RESERVED = /^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9]|CONIN\$|CONOUT\$)$/i;
+
 export function sanitizeFilename(name: string): string {
     const cleaned = name
         .replace(/[\\/:*?"<>|]/g, "")
         .replace(/\s+/g, " ")
-        .trim();
-    return cleaned || "Untitled";
+        .trim()
+        .replace(/[. ]+$/g, "");
+    if (!cleaned) return "Untitled";
+    if (WINDOWS_RESERVED.test(cleaned)) return `_${cleaned}`;
+    return cleaned;
 }
 
 export async function ensureFolder(app: App, path: string): Promise<TFolder> {
@@ -177,7 +240,7 @@ async function writeNote(
     markdown: string,
     source: SourceInfo,
     includeFrontmatter: boolean
-): Promise<void> {
+): Promise<string> {
     let content = markdown;
 
     if (includeFrontmatter) {
@@ -185,22 +248,21 @@ async function writeNote(
         content = frontmatter + "\n\n" + markdown;
     }
 
-    const existing = plugin.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof TFile) {
-        await plugin.app.vault.modify(existing, content);
-        return;
-    }
+    const finalPath = await uniquePath(plugin.app, path, false);
 
     try {
-        await plugin.app.vault.create(path, content);
+        await plugin.app.vault.create(finalPath, content);
     } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("already exists")) {
-            await plugin.app.vault.adapter.write(path, content);
-        } else {
-            throw e;
+            const retryPath = await uniquePath(plugin.app, finalPath, false);
+            await plugin.app.vault.adapter.write(retryPath, content);
+            return retryPath;
         }
+        throw e;
     }
+
+    return finalPath;
 }
 
 function buildFrontmatter(source: SourceInfo): string {
@@ -229,21 +291,12 @@ function formatLocalIso(date: Date): string {
     );
 }
 
-async function uniquePath(app: App, path: string): Promise<string> {
-    const dotIndex = path.lastIndexOf(".");
-    const base = dotIndex >= 0 ? path.slice(0, dotIndex) : path;
-    const ext = dotIndex >= 0 ? path.slice(dotIndex) : "";
+function linkTargetFromPath(path: string): string {
+    return path.replace(/\.md$/, "");
+}
 
-    let candidate = path;
-    let counter = 1;
-
-    let taken = await pathExists(app, candidate);
-    while (taken) {
-        candidate = `${base} (${counter})${ext}`;
-        counter++;
-        taken = await pathExists(app, candidate);
-    }
-    return candidate;
+function escapeAlias(alias: string): string {
+    return alias.replace(/[|[\]\\]/g, "");
 }
 
 async function pathExists(app: App, path: string): Promise<boolean> {

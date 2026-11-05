@@ -26,8 +26,6 @@ interface WorkerMessage {
 export function convertBytes(bytes: Uint8Array): ConversionHandle {
     const blob = new Blob([WORKER_SOURCE], { type: "application/javascript" });
     const blobUrl = URL.createObjectURL(blob);
-    const worker = new Worker(blobUrl);
-    URL.revokeObjectURL(blobUrl);
 
     let settled = false;
     let resolveResult!: (r: ConversionResult) => void;
@@ -39,8 +37,24 @@ export function convertBytes(bytes: Uint8Array): ConversionHandle {
     const cleanup = () => {
         if (settled) return;
         settled = true;
-        worker.terminate();
+        URL.revokeObjectURL(blobUrl);
     };
+
+    let worker: Worker;
+    try {
+        worker = new Worker(blobUrl);
+    } catch (e) {
+        URL.revokeObjectURL(blobUrl);
+        const msg = e instanceof Error ? e.message : String(e);
+        return {
+            result: Promise.resolve({
+                ok: false,
+                errorCode: "worker",
+                errorMessage: msg || "Worker failed to start.",
+            }),
+            cancel: () => {},
+        };
+    }
 
     worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
         const data = event.data;
@@ -48,9 +62,11 @@ export function convertBytes(bytes: Uint8Array): ConversionHandle {
 
         if (data.ok) {
             cleanup();
+            worker.terminate();
             resolveResult({ ok: true, markdown: data.markdown });
         } else {
             cleanup();
+            worker.terminate();
             resolveResult({
                 ok: false,
                 errorCode: data.code,
@@ -62,6 +78,7 @@ export function convertBytes(bytes: Uint8Array): ConversionHandle {
     worker.onerror = (event: ErrorEvent) => {
         if (settled) return;
         cleanup();
+        worker.terminate();
         resolveResult({
             ok: false,
             errorCode: "worker",
@@ -69,11 +86,12 @@ export function convertBytes(bytes: Uint8Array): ConversionHandle {
         });
     };
 
-    worker.postMessage({ id: 1, bytes }, [bytes.buffer]);
+    worker.postMessage({ id: 1, bytes });
 
     const cancel = () => {
         if (settled) return;
         cleanup();
+        worker.terminate();
         resolveResult({ ok: false, cancelled: true });
     };
 
