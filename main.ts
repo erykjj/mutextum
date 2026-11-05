@@ -1,8 +1,9 @@
 // main.ts
 
-import { Plugin, WorkspaceLeaf } from "obsidian";
+import { Plugin, WorkspaceLeaf, TFile } from "obsidian";
 import { MutextumSettingTab, MutextumSettings, DEFAULT_SETTINGS } from "./src/settings";
 import { MutextumPanel, VIEW_TYPE_MUTEXTUM } from "./src/panel";
+import { SUPPORTED_EXTENSIONS } from "./src/ui";
 
 export default class MutextumPlugin extends Plugin {
     settings: MutextumSettings = DEFAULT_SETTINGS;
@@ -17,8 +18,6 @@ export default class MutextumPlugin extends Plugin {
     }
 
     async onload(): Promise<void> {
-        await this.loadSettings();
-
         this.addSettingTab(new MutextumSettingTab(this.app, this));
 
         this.registerView(
@@ -37,9 +36,37 @@ export default class MutextumPlugin extends Plugin {
                 void this.activateView();
             }
         });
+
+        this.registerEvent(
+            this.app.workspace.on("file-menu", (menu, file) => {
+                if (!(file instanceof TFile)) return;
+                if (!SUPPORTED_EXTENSIONS.includes(file.extension.toLowerCase())) return;
+                menu.addItem((item) =>
+                    item
+                        .setTitle("Queue in mu/TEX/tum")
+                        .setIcon("file-symlink")
+                        .onClick(async () => {
+                            const view = await this.activateView();
+                            view?.addVaultFile(file);
+                        })
+                );
+            })
+        );
+
+        this.detachRestoredLeaves();
+        this.app.workspace.onLayoutReady(() => {
+            this.detachRestoredLeaves();
+            void this.loadSettings();
+        });
     }
 
-    async activateView(): Promise<void> {
+    private detachRestoredLeaves(): void {
+        for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_MUTEXTUM)) {
+            leaf.detach();
+        }
+    }
+
+    async activateView(): Promise<MutextumPanel | null> {
         const { workspace } = this.app;
 
         let leaf: WorkspaceLeaf | null = null;
@@ -54,10 +81,11 @@ export default class MutextumPlugin extends Plugin {
 
         if (leaf) {
             await workspace.revealLeaf(leaf);
+            return leaf.view instanceof MutextumPanel ? leaf.view : null;
         }
+
+        return null;
     }
 
-    onunload(): void {
-        // Nothing
-    }
+    onunload(): void { }
 }
