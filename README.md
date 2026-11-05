@@ -44,6 +44,8 @@ The panel lets you change the destination folder and frontmatter toggle for the 
 - **Some PDFs convert with garbled text.** The PDF's internal text layer is the problem, not the conversion; regenerating the PDF from its original source may produce clean output
 - **Encrypted documents** cannot be converted
 - **Multi-note splitting** is based on top-level (`#`) headings only; documents without any H1 headings are written as a single note, regardless of length
+- **Content before the first top-level heading** is preserved as `00 - Preamble.md` when it contains substantive text; if the document has no top-level headings, it is written as a single note
+- **Cancelling a batch** stops the run before the next file; a file already being written completes. The queue is kept, so it can be edited and re-run
 - **Output quality depends on the source.** Conversion preserves what the original document contains; poorly formatted sources, broken hyperlinks, or inconsistent styling in the original will be reflected in the converted Markdown (the converter cannot repair what was never structured correctly)
 
 ---
